@@ -97,11 +97,15 @@ FacetZoom <- ggproto("FacetDuplicate", Facet,
             cbind(data, PANEL = 1L),
             if ('x' %in% layout$name) {
                 index_x <- tryCatch(lazy_eval(params$x, data), error = function(e) FALSE)
-                cbind(data[index_x, ], PANEL = layout$PANEL[layout$name == "x"])
+                if (sum(index_x, na.rm = TRUE) != 0) {
+                    cbind(data[index_x, ], PANEL = layout$PANEL[layout$name == "x"])
+                }
             },
             if ('y' %in% layout$name) {
                 index_y <- tryCatch(lazy_eval(params$y, data), error = function(e) FALSE)
-                cbind(data[index_y, ], PANEL = layout$PANEL[layout$name == "y"])
+                if (sum(index_y, na.rm = TRUE) != 0) {
+                    cbind(data[index_y, ], PANEL = layout$PANEL[layout$name == "y"])
+                }
             }
         )
     },
@@ -111,9 +115,6 @@ FacetZoom <- ggproto("FacetDuplicate", Facet,
             d$PANEL <- panel
             d
         }))
-        if ('full' %in% layout$name && !params$split) {
-            data <- data[!data$PANEL %in% c(2L, 3L), ]
-        }
         data
     },
     draw_panels = function(panels, layout, x_scales, y_scales, ranges, coord,
@@ -123,30 +124,50 @@ FacetZoom <- ggproto("FacetDuplicate", Facet,
         } else if (is.null(params$y)) {
             params$horizontal <- FALSE
         }
-        if (is.null(theme$zoom)) {
+        if (is.null(theme[['zoom']])) {
             theme$zoom <- theme$strip.background
+        }
+        if (is.null(theme$zoom.x)) {
+            theme$zoom.x <- theme$zoom
+        }
+        if (is.null(theme$zoom.y)) {
+            theme$zoom.y <- theme$zoom
         }
         # Construct the panels
         axes <- render_axes(ranges, ranges, coord, theme, FALSE)
         panelGrobs <- create_panels(panels, axes$x, axes$y)
 
+        if ('full' %in% layout$name && !params$split) {
+            panelGrobs <- panelGrobs[c(1, 4)]
+        }
+
         if ('y' %in% layout$name) {
-            zoom_prop <- rescale(y_scales[[2]]$dimension(), from = y_scales[[1]]$dimension())
-            indicator <- polygonGrob(c(1, 1, 0, 0), c(zoom_prop, 1, 0), gp = gpar(col = NA, fill = alpha(theme$zoom$fill, 0.5)))
-            lines <- segmentsGrob(y0 = c(0, 1), x0 = c(0, 0), y1 = zoom_prop, x1 = c(1, 1), gp = gpar(col = theme$zoom$colour,
-                                                                                                      lty = theme$zoom$linetype,
-                                                                                                      lwd = theme$zoom$size,
-                                                                                                      lineend = 'round'))
-            indicator_h <- grobTree(indicator, lines)
+            if (!inherits(theme$zoom.y, 'element_blank')) {
+                zoom_prop <- rescale(y_scales[[2]]$dimension(expansion(y_scales[[2]])),
+                                     from = y_scales[[1]]$dimension(expansion(y_scales[[1]])))
+                indicator <- polygonGrob(c(1, 1, 0, 0), c(zoom_prop, 1, 0), gp = gpar(col = NA, fill = alpha(theme$zoom.y$fill, 0.5)))
+                lines <- segmentsGrob(y0 = c(0, 1), x0 = c(0, 0), y1 = zoom_prop, x1 = c(1, 1), gp = gpar(col = theme$zoom.y$colour,
+                                                                                                          lty = theme$zoom.y$linetype,
+                                                                                                          lwd = theme$zoom.y$size,
+                                                                                                          lineend = 'round'))
+                indicator_h <- grobTree(indicator, lines)
+            } else {
+                indicator_h <- zeroGrob()
+            }
         }
         if ('x' %in% layout$name) {
-            zoom_prop <- rescale(x_scales[[2]]$dimension(), from = x_scales[[1]]$dimension())
-            indicator <- polygonGrob(c(zoom_prop, 1, 0), c(1, 1, 0, 0), gp = gpar(col = NA, fill = alpha(theme$zoom$fill, 0.5)))
-            lines <- segmentsGrob(x0 = c(0, 1), y0 = c(0, 0), x1 = zoom_prop, y1 = c(1, 1), gp = gpar(col = theme$zoom$colour,
-                                                                                                      lty = theme$zoom$linetype,
-                                                                                                      lwd = theme$zoom$size,
-                                                                                                      lineend = 'round'))
-            indicator_v <- grobTree(indicator, lines)
+            if (!inherits(theme$zoom.x, 'element_blank')) {
+                zoom_prop <- rescale(x_scales[[2]]$dimension(expansion(x_scales[[2]])),
+                                     from = x_scales[[1]]$dimension(expansion(x_scales[[1]])))
+                indicator <- polygonGrob(c(zoom_prop, 1, 0), c(1, 1, 0, 0), gp = gpar(col = NA, fill = alpha(theme$zoom.x$fill, 0.5)))
+                lines <- segmentsGrob(x0 = c(0, 1), y0 = c(0, 0), x1 = zoom_prop, y1 = c(1, 1), gp = gpar(col = theme$zoom.x$colour,
+                                                                                                          lty = theme$zoom.x$linetype,
+                                                                                                          lwd = theme$zoom.x$size,
+                                                                                                          lineend = 'round'))
+                indicator_v <- grobTree(indicator, lines)
+            } else {
+                indicator_v <- zeroGrob()
+            }
         }
 
         if ('full' %in% layout$name && params$split) {
@@ -218,23 +239,37 @@ FacetZoom <- ggproto("FacetDuplicate", Facet,
         final
     },
     draw_back = function(data, layout, x_scales, y_scales, theme, params) {
-        if (is.null(theme$zoom)) {
+        if (is.null(theme[['zoom']])) {
             theme$zoom <- theme$strip.background
         }
-        if (!is.null(params$x) && params$show.area) {
-            zoom_prop <- rescale(x_scales[[2]]$dimension(), from = x_scales[[1]]$dimension())
+        if (is.null(theme$zoom.x)) {
+            theme$zoom.x <- theme$zoom
+        }
+        if (is.null(theme$zoom.y)) {
+            theme$zoom.y <- theme$zoom
+        }
+        if (!is.null(params$x) && params$show.area && !inherits(theme$zoom.x, 'element_blank')) {
+            zoom_prop <- rescale(x_scales[[2]]$dimension(expansion(x_scales[[2]])),
+                                 from = x_scales[[1]]$dimension(expansion(x_scales[[1]])))
             x_back <- grobTree(
-                rectGrob(x = mean(zoom_prop), y = 0.5, width = diff(zoom_prop), height = 1, gp = gpar(col = NA, fill = alpha(theme$zoom$fill, 0.5))),
-                segmentsGrob(zoom_prop, c(0, 0), zoom_prop, c(1, 1), gp = gpar(col = theme$zoom$colour))
+                rectGrob(x = mean(zoom_prop), y = 0.5, width = diff(zoom_prop), height = 1, gp = gpar(col = NA, fill = alpha(theme$zoom.x$fill, 0.5))),
+                segmentsGrob(zoom_prop, c(0, 0), zoom_prop, c(1, 1), gp = gpar(col = theme$zoom.x$colour,
+                                                                               lty = theme$zoom.x$linetype,
+                                                                               lwd = theme$zoom.x$size,
+                                                                               lineend = 'round'))
             )
         } else {
             x_back <- zeroGrob()
         }
-        if (!is.null(params$y) && params$show.area) {
-            zoom_prop <- rescale(y_scales[[2]]$dimension(), from = y_scales[[1]]$dimension())
+        if (!is.null(params$y) && params$show.area && !inherits(theme$zoom.y, 'element_blank')) {
+            zoom_prop <- rescale(y_scales[[2]]$dimension(expansion(y_scales[[2]])),
+                                 from = y_scales[[1]]$dimension(expansion(y_scales[[1]])))
             y_back <- grobTree(
-                rectGrob(y = mean(zoom_prop), x = 0.5, height = diff(zoom_prop), width = 1, gp = gpar(col = NA, fill = alpha(theme$zoom$fill, 0.5))),
-                segmentsGrob(y0 = zoom_prop, x0 = c(0, 0), y1 = zoom_prop, x1 = c(1, 1), gp = gpar(col = theme$zoom$colour))
+                rectGrob(y = mean(zoom_prop), x = 0.5, height = diff(zoom_prop), width = 1, gp = gpar(col = NA, fill = alpha(theme$zoom.y$fill, 0.5))),
+                segmentsGrob(y0 = zoom_prop, x0 = c(0, 0), y1 = zoom_prop, x1 = c(1, 1), gp = gpar(col = theme$zoom.y$colour,
+                                                                                                   lty = theme$zoom.y$linetype,
+                                                                                                   lwd = theme$zoom.y$size,
+                                                                                                   lineend = 'round'))
             )
         } else {
             y_back <- zeroGrob()
@@ -257,4 +292,12 @@ create_panels <- function(panels, x.axis, y.axis) {
         table <- gtable_add_grob(table, x, t = c(1, 3), l = 2, z = 20, clip = 'off', name = c('axis-t', 'axis-b'))
         table <- gtable_add_grob(table, y, t = 2, l = c(1,3), z = 20, clip = 'off', name = c('axis-l', 'axis-r'))
     }, panel = panels, x = x.axis, y = y.axis)
+}
+
+expansion <- function (scale, discrete = c(0, 0.6), continuous = c(0.05, 0)) {
+    if (inherits(scale$expand, 'waiver')) {
+        if (scale$is_discrete())
+            discrete
+        else continuous
+    } else scale$expand
 }

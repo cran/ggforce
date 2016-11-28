@@ -1,6 +1,6 @@
-0e43aed92cb57364289802beeaf3977c *DESCRIPTION
+8f7ca0722d6d5c6815b0c887d205f7ab *DESCRIPTION
 b7bd78c034b0ea87c496f5f85bf49d07 *NAMESPACE
-09ff22a05c428d1915e666f3ec9cd470 *NEWS.md
+8f25bf75634769ff9c697aad1c2c03fb *NEWS.md
 8c161e2e167be1df072024d62ae5705d *R/RcppExports.R
 3fc63e2c53fbf31eaf8b3ccbd8702fb3 *R/aaa.R
 5b77d6321bb1cad7e68298989d0a355d *R/arc.R
@@ -8,9 +8,9 @@ d43f3db3853660751fdeec4593e0b04c *R/arc_bar.R
 2ac234e8c2978b67a2e021545857aa95 *R/bezier.R
 e1b7f20cf19964759b7ccef7427bf40f *R/bspline.R
 e9975ed7f9c45ba0d42ae9d334d4c9cb *R/circle.R
-1c4b0f181861e48a83cc1bbfa5dc4080 *R/facet_grid_paginate.R
-fe50d8c1bf3be1dfdb64c607eeb4207b *R/facet_wrap_paginate.R
-0dfef3071665083e0d017ddedba6673e *R/facet_zoom.R
+f00a09ce4e1fcc8b5156c4a627081df6 *R/facet_grid_paginate.R
+b411e2ae03498c143ba85dae0c6edaf9 *R/facet_wrap_paginate.R
+289603fc54e8df93e4ad22dc1a114d8c *R/facet_zoom.R
 d5f16bc7406596ac48029889bc132cf8 *R/ggforce_package.R
 fee6ed1299effd00b4befb852ea654d5 *R/ggproto-classes.R
 bbf90fc36fedb1194089047e928a75e2 *R/interpolate.R
@@ -19,12 +19,12 @@ bbf90fc36fedb1194089047e928a75e2 *R/interpolate.R
 c1d11ff01cbfebe8d716d9ea90e88889 *R/sina.R
 3227ffa82da01b5d8549a393443ad54e *R/themes.R
 24e6f1a7f9864cfcac18967e36570a31 *R/trans.R
-b75a77a6dc9d76d25b312655d3e0fb17 *README.md
-0e782c63b2b894f4e1a7f6cb48efacf6 *build/partial.rdb
-2916209d3acb7db7d698f0aae8edc945 *build/vignette.rds
+69fdc01a50614752cdc8b30e8339db8b *README.md
+91804f430ebba05678b7991eca37d8c0 *build/partial.rdb
+dba7ddf6c711012e2ae59813f11dea77 *build/vignette.rds
 8a76c67cd1311b00b13021a37f0f0142 *inst/doc/Visual_Guide.R
-1d54fa33bab5cba4ec6f74b7040f0793 *inst/doc/Visual_Guide.Rmd
-8a4b42f7c78a3204d18d4b9770523a79 *inst/doc/Visual_Guide.html
+e206d6a590104a9e9263f0a00c01c72b *inst/doc/Visual_Guide.Rmd
+ca51e1728b6ff2c73724622d38a23565 *inst/doc/Visual_Guide.html
 78ba26270b9af4b55c1814dc6cb373f9 *man/facet_grid_paginate.Rd
 19ff8bf010d39b387475c18a9504b774 *man/facet_wrap_paginate.Rd
 7e277cb153c874c4fe4de5e9c421e9a2 *man/facet_zoom.Rd
@@ -49,4 +49,4 @@ a017775cf04f0b974e75e9957ac04259 *src/bSpline.cpp
 c2a8d8e281329c195eb334d3cad558c4 *src/bezier.cpp
 4ba307c7d6cf09c852723e2e7b58212c *src/deBoor.cpp
 7e902249cf4118601da98aa2c0aa4443 *src/deBoor.h
-1d54fa33bab5cba4ec6f74b7040f0793 *vignettes/Visual_Guide.Rmd
+e206d6a590104a9e9263f0a00c01c72b *vignettes/Visual_Guide.Rmd
