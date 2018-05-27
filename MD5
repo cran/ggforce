@@ -1,7 +1,7 @@
-8f7ca0722d6d5c6815b0c887d205f7ab *DESCRIPTION
+32fe15f6a68891959171ec8276b9cf08 *DESCRIPTION
 b7bd78c034b0ea87c496f5f85bf49d07 *NAMESPACE
 8f25bf75634769ff9c697aad1c2c03fb *NEWS.md
-8c161e2e167be1df072024d62ae5705d *R/RcppExports.R
+95dae9464168894352919338bd45ada4 *R/RcppExports.R
 3fc63e2c53fbf31eaf8b3ccbd8702fb3 *R/aaa.R
 5b77d6321bb1cad7e68298989d0a355d *R/arc.R
 d43f3db3853660751fdeec4593e0b04c *R/arc_bar.R
@@ -14,13 +14,13 @@ b411e2ae03498c143ba85dae0c6edaf9 *R/facet_wrap_paginate.R
 d5f16bc7406596ac48029889bc132cf8 *R/ggforce_package.R
 fee6ed1299effd00b4befb852ea654d5 *R/ggproto-classes.R
 bbf90fc36fedb1194089047e928a75e2 *R/interpolate.R
-04ae527392762ae99542fc3ac74bc1c0 *R/link.R
+94ce79ec33a7d8bb734a45f51f89eac8 *R/link.R
 109ea61501f1e4e874a4c0c947a1b0a6 *R/scale-unit.R
 c1d11ff01cbfebe8d716d9ea90e88889 *R/sina.R
 3227ffa82da01b5d8549a393443ad54e *R/themes.R
 24e6f1a7f9864cfcac18967e36570a31 *R/trans.R
 69fdc01a50614752cdc8b30e8339db8b *README.md
-91804f430ebba05678b7991eca37d8c0 *build/partial.rdb
+d1d8a4d45ac42912b904ee423a959dd7 *build/partial.rdb
 dba7ddf6c711012e2ae59813f11dea77 *build/vignette.rds
 8a76c67cd1311b00b13021a37f0f0142 *inst/doc/Visual_Guide.R
 e206d6a590104a9e9263f0a00c01c72b *inst/doc/Visual_Guide.Rmd
@@ -44,7 +44,7 @@ a415bf45c572e322475a7f6f7d5a0f21 *man/radial_trans.Rd
 355aea11a6d9f766016f6b5827b82085 *man/scale_unit.Rd
 1b47382adf5e4018d21e2dd8031ef6c3 *man/theme_no_axes.Rd
 738dcadcc5e577e8235f9a49b958a53e *man/trans_reverser.Rd
-659866f0e6902d0e790e43ee46ad448e *src/RcppExports.cpp
+7f34a13aa83d342f110d70716bc860a5 *src/RcppExports.cpp
 a017775cf04f0b974e75e9957ac04259 *src/bSpline.cpp
 c2a8d8e281329c195eb334d3cad558c4 *src/bezier.cpp
 4ba307c7d6cf09c852723e2e7b58212c *src/deBoor.cpp
