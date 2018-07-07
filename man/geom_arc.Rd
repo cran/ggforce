@@ -2,11 +2,11 @@
 % Please edit documentation in R/arc.R
 \name{geom_arc}
 \alias{geom_arc}
-\alias{geom_arc0}
-\alias{geom_arc2}
 \alias{stat_arc}
-\alias{stat_arc0}
 \alias{stat_arc2}
+\alias{geom_arc2}
+\alias{stat_arc0}
+\alias{geom_arc0}
 \title{Arcs based on radius and radians}
 \usage{
 stat_arc(mapping = NULL, data = NULL, geom = "arc",
@@ -124,6 +124,7 @@ bold):
  \item{curvature}{The curvature of the curveGrob to match a circle}
 }
 }
+
 \examples{
 # Lets make some data
 arcs <- data.frame(
@@ -138,10 +139,9 @@ ggplot() + geom_arc(aes(x0=0, y0=0, r=r, start=start, end=end,
                     data=arcs)
 
 }
-\author{
-Thomas Lin Pedersen
-}
 \seealso{
 \code{\link{geom_arc_bar}} for drawing arcs with fill
 }
-
+\author{
+Thomas Lin Pedersen
+}

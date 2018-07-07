@@ -116,6 +116,7 @@ samples to spread within:
   \item{scaled}{adjusted x-coordinates}
 }
 }
+
 \examples{
 ggplot(midwest, aes(state, area)) + geom_point()
 
@@ -175,4 +176,3 @@ p + geom_violin() + geom_sina(scale = FALSE)
 \author{
 Nikos Sidiropoulos
 }
-

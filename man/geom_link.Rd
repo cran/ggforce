@@ -2,10 +2,10 @@
 % Please edit documentation in R/link.R
 \name{geom_link}
 \alias{geom_link}
-\alias{geom_link0}
-\alias{geom_link2}
 \alias{stat_link}
 \alias{stat_link2}
+\alias{geom_link2}
+\alias{geom_link0}
 \title{Link points with paths}
 \usage{
 stat_link(mapping = NULL, data = NULL, geom = "path",
@@ -25,8 +25,9 @@ geom_link2(mapping = NULL, data = NULL, stat = "link2",
   show.legend = NA, inherit.aes = TRUE, n = 100, ...)
 
 geom_link0(mapping = NULL, data = NULL, stat = "identity",
-  position = "identity", ..., arrow = NULL, lineend = "butt",
-  na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
+  position = "identity", ..., arrow = NULL, arrow.fill = NULL,
+  lineend = "butt", linejoin = "round", na.rm = FALSE, show.legend = NA,
+  inherit.aes = TRUE)
 }
 \arguments{
 \item{mapping}{Set of aesthetic mappings created by \code{\link[ggplot2]{aes}}
@@ -74,6 +75,11 @@ as a string.}
 \item{arrow}{specification for arrow heads, as created by arrow()}
 
 \item{lineend}{Line end style (round, butt, square)}
+
+\item{arrow.fill}{fill color to use for the arrow head (if closed). `NULL` 
+means use colour aesthetic.}
+
+\item{linejoin}{Line join style (round, mitre, bevel).}
 }
 \description{
 This set of geoms makes it possible to connect points using straight lines.
@@ -123,6 +129,7 @@ bold):
  \item{index}{The progression along the interpolation mapped between 0 and 1}
 }
 }
+
 \examples{
 # Lets make some data
 lines <- data.frame(
@@ -147,4 +154,3 @@ ggplot() + geom_link2(aes(x = x, y = y, colour = colour, size = width,
 \author{
 Thomas Lin Pedersen
 }
-

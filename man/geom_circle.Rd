@@ -92,6 +92,7 @@ bold):
  \item{x, y}{The start coordinates for the segment}
 }
 }
+
 \examples{
 # Lets make some data
 circles <- data.frame(
@@ -109,10 +110,9 @@ ggplot() + geom_circle(aes(x0=x0, y0=y0, r=r, fill=r), data=circles) +
 
 
 }
-\author{
-Thomas Lin Pedersen
-}
 \seealso{
 \code{\link{geom_arc_bar}} for drawing arcs with fill
 }
-
+\author{
+Thomas Lin Pedersen
+}
