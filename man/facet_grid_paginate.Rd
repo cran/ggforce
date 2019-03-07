@@ -68,7 +68,7 @@ will be shown, regardless of whether or not they appear in the data.}
 \item{byrow}{Should the pages be created row-wise or column wise}
 }
 \description{
-This extension to \code{\link[ggplot2]{facet_grid}} will allow you to split
+This extension to \code{\link[ggplot2:facet_grid]{ggplot2::facet_grid()}} will allow you to split
 a facetted plot over multiple pages. You define a number of rows and columns
 per page as well as the page number to plot, and the function will
 automatically only plot the correct panels. Usually this will be put in a
@@ -82,11 +82,14 @@ fall back to the standard \code{facet_grid} functionality.
 # Draw a small section of the grid
 ggplot(diamonds) +
   geom_point(aes(carat, price), alpha = 0.1) +
-  facet_grid_paginate(color~cut:clarity, ncol = 3, nrow = 3, page = 4)
-
+  facet_grid_paginate(color ~ cut:clarity, ncol = 3, nrow = 3, page = 4)
 }
 \seealso{
-Other ggforce facets: \code{\link{facet_wrap_paginate}},
+\code{\link[=n_pages]{n_pages()}} to compute the total number of pages in a paginated
+faceted plot
+
+Other ggforce facets: \code{\link{facet_stereo}},
+  \code{\link{facet_wrap_paginate}},
   \code{\link{facet_zoom}}
 }
 \concept{ggforce facets}

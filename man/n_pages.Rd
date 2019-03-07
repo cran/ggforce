@@ -17,14 +17,13 @@ returns NULL
 }
 \description{
 This is a simple helper that returns the number of pages it takes to plot all
-panels when using \code{\link{facet_wrap_paginate}} and
-\code{\link{facet_grid_paginate}}. It partially builds the plot so depending
+panels when using \code{\link[=facet_wrap_paginate]{facet_wrap_paginate()}} and
+\code{\link[=facet_grid_paginate]{facet_grid_paginate()}}. It partially builds the plot so depending
 on the complexity of your plot it might take some time to calculate...
 }
 \examples{
 p <- ggplot(diamonds) +
-    geom_point(aes(carat, price), alpha = 0.1) +
-    facet_wrap_paginate(~cut:clarity, ncol = 3, nrow = 3, page = 1)
+  geom_point(aes(carat, price), alpha = 0.1) +
+  facet_wrap_paginate(~ cut:clarity, ncol = 3, nrow = 3, page = 1)
 n_pages(p)
-
 }

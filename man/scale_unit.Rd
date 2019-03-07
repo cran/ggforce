@@ -17,7 +17,7 @@ scale_y_unit(name = waiver(), breaks = waiver(), unit = NULL,
   trans = "identity", position = "left", sec.axis = waiver())
 }
 \arguments{
-\item{name}{The name of the scale. Used as axis or legend title. If
+\item{name}{The name of the scale. Used as the axis or legend title. If
 \code{waiver()}, the default, the name of the scale is taken from the first
 mapping used for that aesthetic. If \code{NULL}, the legend title will be
 omitted.}
@@ -66,16 +66,17 @@ expand the scale by 5\% on each side for continuous variables, and by
 0.6 units on each side for discrete variables.}
 
 \item{oob}{Function that handles limits outside of the scale limits
-(out of bounds). The default replaces out of bounds values with NA.}
+(out of bounds). The default replaces out of bounds values with \code{NA}.}
 
 \item{na.value}{Missing values will be replaced with this value.}
 
 \item{trans}{Either the name of a transformation object, or the
 object itself. Built-in transformations include "asn", "atanh",
-"boxcox", "exp", "identity", "log", "log10", "log1p", "log2",
-"logit", "probability", "probit", "reciprocal", "reverse" and "sqrt".
+"boxcox", "date", "exp", "hms", "identity", "log", "log10", "log1p", "log2",
+"logit", "modulus", "probability", "probit", "pseudo_log", "reciprocal",
+"reverse", "sqrt" and "time".
 
-A transformation object bundles together a transform, it's inverse,
+A transformation object bundles together a transform, its inverse,
 and methods for generating breaks and labels. Transformation objects
 are defined in the scales package, and are called \code{name_trans}, e.g.
 \code{\link[scales:boxcox_trans]{scales::boxcox_trans()}}. You can create your own
@@ -93,22 +94,21 @@ usually be added automatically. To override manually, use
 }
 \examples{
 library(units)
-gallon <- make_unit('gallon')
-mtcars$consumption <- mtcars$mpg * with(ud_units, mi/gallon)
+gallon <- as_units('gallon')
+mtcars$consumption <- mtcars$mpg * with(ud_units, mi / gallon)
 mtcars$power <- mtcars$hp * with(ud_units, hp)
 
 # Use units encoded into the data
 ggplot(mtcars) +
-    geom_point(aes(power, consumption))
+  geom_point(aes(power, consumption))
 
 # Convert units on the fly during plotting
 ggplot(mtcars) +
-    geom_point(aes(power, consumption)) +
-    scale_x_unit(unit = 'W') +
-    scale_y_unit(unit = 'km/l')
+  geom_point(aes(power, consumption)) +
+  scale_x_unit(unit = 'W') +
+  scale_y_unit(unit = 'km/l')
 
 # Resolve units when transforming data
 ggplot(mtcars) +
-    geom_point(aes(power, 1/consumption))
-
+  geom_point(aes(power, 1 / consumption))
 }

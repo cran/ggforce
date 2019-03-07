@@ -5,9 +5,11 @@
 #' have little meaning.
 #'
 #' @param base.theme The theme to use as a base for the new theme. Defaults to
-#' \code{\link[ggplot2]{theme_bw}()}.
+#' [ggplot2::theme_bw()].
 #'
 #' @return A modified version of base.theme
+#'
+#' @export
 #'
 #' @examples
 #' p <- ggplot() + geom_point(aes(x = wt, y = qsec), data = mtcars)
@@ -15,13 +17,12 @@
 #' p + theme_no_axes()
 #' p + theme_no_axes(theme_grey())
 #'
-#' @importFrom ggplot2 theme_bw theme element_blank %+replace%
-#' @export
-#'
 theme_no_axes <- function(base.theme = theme_bw()) {
-    base.theme %+replace%
-        theme(axis.text=element_blank(),
-              axis.title=element_blank(),
-              axis.ticks=element_blank(),
-              panel.grid=element_blank())
+  base.theme %+replace%
+    theme(
+      axis.text = element_blank(),
+      axis.title = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank()
+    )
 }

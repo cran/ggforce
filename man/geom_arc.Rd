@@ -34,62 +34,68 @@ geom_arc0(mapping = NULL, data = NULL, stat = "arc0",
   na.rm = FALSE, show.legend = NA, inherit.aes = TRUE, ...)
 }
 \arguments{
-\item{mapping}{Set of aesthetic mappings created by \code{\link[ggplot2]{aes}}
-or \code{\link[ggplot2]{aes_}}. If specified and \code{inherit.aes = TRUE}
-(the default), is combined with the default mapping at the top level of the
-plot. You only need to supply mapping if there isn't a mapping defined for
-the plot.}
+\item{mapping}{Set of aesthetic mappings created by \code{\link[=aes]{aes()}} or
+\code{\link[=aes_]{aes_()}}. If specified and \code{inherit.aes = TRUE} (the
+default), it is combined with the default mapping at the top level of the
+plot. You must supply \code{mapping} if there is no plot mapping.}
 
-\item{data}{A data frame. If specified, overrides the default data frame
-defined at the top level of the plot.}
+\item{data}{The data to be displayed in this layer. There are three
+options:
 
-\item{geom, }{stat Override the default connection between \code{geom_arc} and
-\code{stat_arc}.}
+If \code{NULL}, the default, the data is inherited from the plot
+data as specified in the call to \code{\link[=ggplot]{ggplot()}}.
 
-\item{position}{Position adjustment, either as a string, or the result of a
-call to a position adjustment function.}
+A \code{data.frame}, or other object, will override the plot
+data. All objects will be fortified to produce a data frame. See
+\code{\link[=fortify]{fortify()}} for which variables will be created.
 
-\item{na.rm}{If \code{FALSE} (the default), removes missing values with a
-warning. If \code{TRUE} silently removes missing values.}
+A \code{function} will be called with a single argument,
+the plot data. The return value must be a \code{data.frame}, and
+will be used as the layer data.}
+
+\item{geom}{The geometric object to use display the data}
+
+\item{position}{Position adjustment, either as a string, or the result of
+a call to a position adjustment function.}
+
+\item{na.rm}{If \code{FALSE}, the default, missing values are removed with
+a warning. If \code{TRUE}, missing values are silently removed.}
 
 \item{show.legend}{logical. Should this layer be included in the legends?
-\code{NA}, the default, includes if any aesthetics are mapped. \code{FALSE}
-never includes, and \code{TRUE} always includes.}
+\code{NA}, the default, includes if any aesthetics are mapped.
+\code{FALSE} never includes, and \code{TRUE} always includes.
+It can also be a named logical vector to finely select the aesthetics to
+display.}
 
 \item{n}{the smoothness of the arc. Sets the number of points to use if the
 arc would cover a full circle}
 
-\item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics, rather
-than combining with them. This is most useful for helper functions that
-define both data and aesthetics and shouldn't inherit behaviour from the
-default plot specification, e.g. borders.}
+\item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics,
+rather than combining with them. This is most useful for helper functions
+that define both data and aesthetics and shouldn't inherit behaviour from
+the default plot specification, e.g. \code{\link[=borders]{borders()}}.}
 
-\item{...}{other arguments passed on to \code{\link[ggplot2]{layer}}. There
-are three types of arguments you can use here:
-\itemize{
- \item{Aesthetics: to set an aesthetic to a fixed value, like
- \code{color = "red"} or \code{size = 3.}}
- \item{Other arguments to the layer, for example you override the default
- \code{stat} associated with the layer.}
- \item{Other arguments passed on to the stat.}
-}}
+\item{...}{Other arguments passed on to \code{\link[=layer]{layer()}}. These are
+often aesthetics, used to set an aesthetic to a fixed value, like
+\code{colour = "red"} or \code{size = 3}. They may also be parameters
+to the paired geom/stat.}
 
-\item{stat}{The statistical transformation to use on the data for this layer,
-as a string.}
+\item{stat}{The statistical transformation to use on the data for this
+layer, as a string.}
 
-\item{arrow}{specification for arrow heads, as created by arrow()}
+\item{arrow}{Arrow specification, as created by \code{\link[grid:arrow]{grid::arrow()}}.}
 
-\item{lineend}{Line end style (round, butt, square)}
+\item{lineend}{Line end style (round, butt, square).}
 
 \item{ncp}{the number of control points used to draw the arc with curveGrob.
 Determines how well the arc approximates a circle section}
 }
 \description{
 This set of stats and geoms makes it possible to draw circle segments based
-on a centre point, a radius and a start and end angle (in radians). These
+on a center point, a radius and a start and end angle (in radians). These
 functions are intended for cartesian coordinate systems and makes it possible
 to create circular plot types without using the
-\code{\link[ggplot2]{coord_polar}} coordinate system.
+\code{\link[ggplot2:coord_polar]{ggplot2::coord_polar()}} coordinate system.
 }
 \details{
 An arc is a segment of a line describing a circle. It is the
@@ -102,16 +108,16 @@ an entety.
 geom_arc understand the following aesthetics (required aesthetics are in
 bold):
 \itemize{
- \item{\strong{x0}}
- \item{\strong{y0}}
- \item{\strong{r}}
- \item{\strong{start}}
- \item{\strong{end}}
- \item{color}
- \item{size}
- \item{linetype}
- \item{alpha}
- \item{lineend}
+\item \strong{x0}
+\item \strong{y0}
+\item \strong{r}
+\item \strong{start}
+\item \strong{end}
+\item color
+\item size
+\item linetype
+\item alpha
+\item lineend
 }
 }
 
@@ -119,29 +125,51 @@ bold):
 
 
 \describe{
- \item{x, y}{The start coordinates for the segment}
- \item{xend, yend}{The end coordinates for the segment}
- \item{curvature}{The curvature of the curveGrob to match a circle}
+\item{x, y}{The start coordinates for the segment}
+\item{xend, yend}{The end coordinates for the segment}
+\item{curvature}{The curvature of the curveGrob to match a circle}
 }
 }
 
 \examples{
 # Lets make some data
 arcs <- data.frame(
-  start = seq(0, 2*pi, length.out=11)[-11],
-  end = seq(0, 2*pi, length.out=11)[-1],
+  start = seq(0, 2 * pi, length.out = 11)[-11],
+  end = seq(0, 2 * pi, length.out = 11)[-1],
   r = rep(1:2, 5)
 )
 
 # Behold the arcs
-ggplot() + geom_arc(aes(x0=0, y0=0, r=r, start=start, end=end,
-                        linetype=factor(r)),
-                    data=arcs)
+ggplot(arcs) +
+  geom_arc(aes(x0 = 0, y0 = 0, r = r, start = start, end = end,
+               linetype = factor(r)))
+
+# Use the calculated index to map values to position on the arc
+ggplot(arcs) +
+  geom_arc(aes(x0 = 0, y0 = 0, r = r, start = start, end = end,
+               size = stat(index)), lineend = 'round') +
+  scale_radius() # linear size scale
+
+# The 0 version maps directly to curveGrob instead of calculating the points
+# itself
+ggplot(arcs) +
+  geom_arc0(aes(x0 = 0, y0 = 0, r = r, start = start, end = end,
+                linetype = factor(r)))
+
+# The 2 version allows interpolation of aesthetics between the start and end
+# points
+arcs2 <- data.frame(
+  angle = c(arcs$start, arcs$end),
+  r = rep(arcs$r, 2),
+  group = rep(1:10, 2),
+  colour = sample(letters[1:5], 20, TRUE)
+)
+
+ggplot(arcs2) +
+  geom_arc2(aes(x0 = 0, y0 = 0, r = r, end = angle, group = group,
+                colour = colour), size = 2)
 
 }
 \seealso{
-\code{\link{geom_arc_bar}} for drawing arcs with fill
-}
-\author{
-Thomas Lin Pedersen
+\code{\link[=geom_arc_bar]{geom_arc_bar()}} for drawing arcs with fill
 }

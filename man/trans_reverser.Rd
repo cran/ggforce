@@ -8,7 +8,7 @@ trans_reverser(trans)
 }
 \arguments{
 \item{trans}{A trans object or an object that can be converted to one using
-\code{\link[scales]{as.trans}}}
+\code{\link[scales:as.trans]{scales::as.trans()}}}
 }
 \value{
 A trans object
@@ -21,12 +21,12 @@ to one and creates a reverse version of it.
 }
 \examples{
 # Lets make a plot
-p <- ggplot() + geom_line(aes(x=1:10, y=1:10))
+p <- ggplot() +
+  geom_line(aes(x = 1:10, y = 1:10))
 
 # scales already have a reverse trans
-p + scale_x_continuous(trans='reverse')
+p + scale_x_continuous(trans = 'reverse')
 
 # But what if you wanted to reverse an already log transformed scale?
-p + scale_x_continuous(trans=trans_reverser('log'))
-
+p + scale_x_continuous(trans = trans_reverser('log'))
 }

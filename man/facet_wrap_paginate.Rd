@@ -4,10 +4,10 @@
 \alias{facet_wrap_paginate}
 \title{Split facet_wrap over multiple plots}
 \usage{
-facet_wrap_paginate(facets, nrow = NULL, ncol = NULL, scales = "fixed",
-  shrink = TRUE, labeller = "label_value", as.table = TRUE,
-  switch = NULL, drop = TRUE, dir = "h", strip.position = "top",
-  page = 1)
+facet_wrap_paginate(facets, nrow = NULL, ncol = NULL,
+  scales = "fixed", shrink = TRUE, labeller = "label_value",
+  as.table = TRUE, switch = NULL, drop = TRUE, dir = "h",
+  strip.position = "top", page = 1)
 }
 \arguments{
 \item{facets}{A set of variables or expressions quoted by \code{\link[=vars]{vars()}}
@@ -15,14 +15,10 @@ and defining faceting groups on the rows or columns dimension.
 The variables can be named (the names are passed to \code{labeller}).
 
 For compatibility with the classic interface, can also be a
-formula or character vector. Use either a one sided formula, `~a
-\itemize{
-\item b\code{, or a character vector,}c("a", "b")`.
-}}
+formula or character vector. Use either a one sided formula, \code{~a + b},
+or a character vector, \code{c("a", "b")}.}
 
-\item{nrow}{Number of rows and columns.}
-
-\item{ncol}{Number of rows and columns}
+\item{nrow, ncol}{Number of rows and columns}
 
 \item{scales}{Should scales be fixed (\code{"fixed"}, the default),
 free (\code{"free"}), or free in one dimension (\code{"free_x"},
@@ -67,7 +63,7 @@ either of the four sides by setting \code{strip.position = c("top",
 \item{page}{The page to draw}
 }
 \description{
-This extension to \code{\link[ggplot2]{facet_wrap}} will allow you to split
+This extension to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}} will allow you to split
 a facetted plot over multiple pages. You define a number of rows and columns
 per page as well as the page number to plot, and the function will
 automatically only plot the correct panels. Usually this will be put in a
@@ -78,21 +74,16 @@ If either \code{ncol} or \code{nrow} is \code{NULL} this function will
 fall back to the standard \code{facet_wrap} functionality.
 }
 \examples{
-# Calculate the number of pages with 9 panels per page
-n_pages <- ceiling(
-  length(levels(diamonds$cut)) * length(levels(diamonds$clarity)) / 9
-)
-
-# Draw each page
-for (i in seq_len(n_pages)) {
-  ggplot(diamonds) +
+ggplot(diamonds) +
     geom_point(aes(carat, price), alpha = 0.1) +
-    facet_wrap_paginate(~cut:clarity, ncol = 3, nrow = 3, page = i)
-}
+    facet_wrap_paginate(~ cut:clarity, ncol = 3, nrow = 3, page = 4)
 
 }
 \seealso{
+\code{\link[=n_pages]{n_pages()}} to compute the total number of pages in a paginated
+faceted plot
+
 Other ggforce facets: \code{\link{facet_grid_paginate}},
-  \code{\link{facet_zoom}}
+  \code{\link{facet_stereo}}, \code{\link{facet_zoom}}
 }
 \concept{ggforce facets}

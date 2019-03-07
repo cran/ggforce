@@ -4,12 +4,20 @@
 \alias{facet_zoom}
 \title{Facet data for zoom with context}
 \usage{
-facet_zoom(x, y, xy, split = FALSE, horizontal = TRUE, zoom.size = 2,
+facet_zoom(x, y, xy, zoom.data, xlim = NULL, ylim = NULL,
+  split = FALSE, horizontal = TRUE, zoom.size = 2,
   show.area = TRUE, shrink = TRUE)
 }
 \arguments{
 \item{x, y, xy}{An expression evaluating to a logical vector that determines
 the subset of data to zoom in on}
+
+\item{zoom.data}{An expression evaluating to a logical vector. If \code{TRUE}
+the data only shows in the zoom panels. If \code{FALSE} the data only show in
+the context panel. If \code{NA} the data will show in all panels.}
+
+\item{xlim, ylim}{Specific zoom ranges for each axis. If present they will
+override \code{x}, \code{y}, and/or \code{xy}.}
 
 \item{split}{If both \code{x} and \code{y} is given, should each axis zoom
 be shown separately as well? Defaults to \code{FALSE}}
@@ -39,27 +47,37 @@ possible to both get each zoom separately and combined or just combined.
 \examples{
 # Zoom in on the versicolor species on the x-axis
 ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
-    geom_point() +
-    facet_zoom(x = Species == "versicolor")
+  geom_point() +
+  facet_zoom(x = Species == 'versicolor')
 
 # Zoom in on versicolor on both axes
 ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
-    geom_point() +
-    facet_zoom(xy = Species == "versicolor")
+  geom_point() +
+  facet_zoom(xy = Species == 'versicolor')
 
 # Use different zoom criteria on each axis
 ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
-    geom_point() +
-    facet_zoom(x = Species != 'setosa', y = Species == 'versicolor')
+  geom_point() +
+  facet_zoom(x = Species != 'setosa', y = Species == 'versicolor')
 
 # Get each axis zoom separately as well
 ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
-    geom_point() +
-    facet_zoom(xy = Species == "versicolor", split = TRUE)
+  geom_point() +
+  facet_zoom(xy = Species == 'versicolor', split = TRUE)
 
+# Define the zoom area directly
+ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
+  geom_point() +
+  facet_zoom(xlim = c(2, 4))
+
+# Selectively show data in the zoom panel
+ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
+  geom_point() +
+  facet_zoom(x = Species == 'versicolor', zoom.data = Species == 'versicolor')
 }
 \seealso{
 Other ggforce facets: \code{\link{facet_grid_paginate}},
+  \code{\link{facet_stereo}},
   \code{\link{facet_wrap_paginate}}
 }
 \concept{ggforce facets}
