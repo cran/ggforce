@@ -1,7 +1,7 @@
-e32b7f3e581f61f6c21f581cd214ff20 *DESCRIPTION
+842b5d4769278b1211a07fd0776e761d *DESCRIPTION
 c31ee18d335f7158ed985f5939319c1f *LICENSE
 8eab12a99662206665dd991e09ce07ce *NAMESPACE
-93a9d234af02667aa35981c748e847cf *NEWS.md
+0e90b9c4ba2b167b060a2ed133371292 *NEWS.md
 5f42de1a5c1bd0d2bca8e5e0895fcbfe *R/RcppExports.R
 9fa911350875544cc81a67ef2e4c3b84 *R/aaa.R
 bf11787eef71c2fc3ad3305f499c978b *R/arc.R
@@ -32,7 +32,7 @@ fd04cd5a3f90236c86d7fb2db85f3759 *R/mark_circle.R
 051d0f8e7aefd474db5d14909e420b38 *R/scale-depth.R
 d85a193d1983fee04b02458ce006dfed *R/scale-unit.R
 964b4a6dd0318390d7ccf126b9c596b9 *R/shape.R
-56f9506a526737715d2bee08f721d96f *R/sina.R
+bdc5f545e240f26f3c3eac2c61427c77 *R/sina.R
 9f89d74108eb9fa277b1689d93daf052 *R/spiro.R
 d1434c1bd4a80b925fe3d61951e9eaca *R/themes.R
 79a8beadde46db64d1111de5c485c3ad *R/trans.R
@@ -43,7 +43,7 @@ bf64ec0f9ae05cc3a626f88ddd2e885e *R/utilities.R
 0a26825bd6163c80c94ad07564b8f202 *build/vignette.rds
 e4f96c820b1dfac3a3926f380c0fa456 *inst/doc/Visual_Guide.R
 d11b10163b5ab9c8453f948816a71aef *inst/doc/Visual_Guide.Rmd
-3acb39aa3dcfe82eed25c581191f0fab *inst/doc/Visual_Guide.html
+0bbaff123a624f822836a567ee45e65b *inst/doc/Visual_Guide.html
 cc48bbeef3e3eafcb13a8d56eff3b50b *man/facet_grid_paginate.Rd
 869d1b2d90d7f19393798e4508609e47 *man/facet_stereo.Rd
 7e4dc15b0f4f1b6970dc7c95c23bd037 *man/facet_wrap_paginate.Rd
