@@ -60,8 +60,8 @@ StatRegon <- ggproto('StatRegon', Stat,
       if (n %% 2 == 0) p <- p + p[2] / 2
       p * 2 * pi
     }))
-    data$group <- seq_len(nrow(data))
-    data <- data[rep(data$group, data$sides), ]
+    data$group <- paste0(data$group, '_', seq_len(nrow(data)))
+    data <- data[rep(seq_len(nrow(data)), data$sides), ]
     x_tmp <- sin(pos) * data$r
     y_tmp <- cos(pos) * data$r
     data$x <- data$x0 + x_tmp * cos(data$angle) - y_tmp * sin(data$angle)
