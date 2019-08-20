@@ -67,12 +67,12 @@ StatEllip <- ggproto('StatEllip', Stat,
     data$m2 <- ifelse(is.null(data$m2), data$m1, data$m2)
     data
   },
-  compute_layer = function(self, data, params, layout) {
+  compute_panel = function(self, data, scales, n = 360) {
     if (is.null(data)) return(data)
-    data$group <- paste0(data$group, '_', seq_len(nrow(data)))
+    data$group <- make.unique(as.character(data$group))
     n_ellipses <- nrow(data)
-    data <- data[rep(seq_len(n_ellipses), each = params$n), ]
-    points <- rep(seq(0, 2 * pi, length.out = params$n + 1)[seq_len(params$n)],
+    data <- data[rep(seq_len(n_ellipses), each = n), ]
+    points <- rep(seq(0, 2 * pi, length.out = n + 1)[seq_len(n)],
                   n_ellipses)
     cos_p <- cos(points)
     sin_p <- sin(points)

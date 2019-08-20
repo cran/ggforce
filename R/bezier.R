@@ -96,7 +96,29 @@ NULL
 #' @usage NULL
 #' @export
 StatBezier <- ggproto('StatBezier', Stat,
-  compute_layer = function(self, data, params, panels) {
+  # .Deprecated - remove after next release
+  compute_layer = function(self, data, params, layout) {
+    if (is.null(data)) return(data)
+    data <- remove_missing(data, params$na.rm,
+                           c(self$required_aes, self$non_missing_aes),
+                           snake_class(self),
+                           finite = TRUE
+    )
+
+    # Trim off extra parameters
+    params <- params[intersect(names(params), self$parameters())]
+
+    args <- c(list(data = quote(data), scales = quote(scales)), params)
+    dapply(data, "PANEL", function(data) {
+      scales <- layout$get_scales(data$PANEL[1])
+      tryCatch(do.call(self$compute_panel, args), error = function(e) {
+        warning("Computation failed in `", snake_class(self), "()`:\n",
+                e$message, call. = FALSE)
+        new_data_frame()
+      })
+    })
+  },
+  compute_panel = function(data, scales, n = 100) {
     if (is.null(data)) return(data)
     nControls <- table(data$group)
     controlRange <- range(nControls)
@@ -105,13 +127,13 @@ StatBezier <- ggproto('StatBezier', Stat,
     }
     data <- data[order(data$group), ]
     groups <- unique(data$group)
-    paths <- getBeziers(data$x, data$y, match(data$group, groups), params$n)
+    paths <- getBeziers(data$x, data$y, match(data$group, groups), n)
     paths <- data.frame(
       x = paths$paths[, 1], y = paths$paths[, 2],
       group = groups[paths$pathID]
     )
-    paths$index <- rep(seq(0, 1, length.out = params$n), length(nControls))
-    dataIndex <- rep(match(unique(data$group), data$group), each = params$n)
+    paths$index <- rep(seq(0, 1, length.out = n), length(nControls))
+    dataIndex <- rep(match(unique(data$group), data$group), each = n)
     cbind(
       paths,
       data[dataIndex, !names(data) %in% c('x', 'y', 'group'), drop = FALSE]
@@ -218,7 +240,29 @@ geom_bezier2 <- function(mapping = NULL, data = NULL, stat = 'bezier2',
 #' @usage NULL
 #' @export
 StatBezier0 <- ggproto('StatBezier0', Stat,
-  compute_layer = function(self, data, params, panels) {
+  # .Deprecated - remove after next release
+  compute_layer = function(self, data, params, layout) {
+    if (is.null(data)) return(data)
+    data <- remove_missing(data, params$na.rm,
+                           c(self$required_aes, self$non_missing_aes),
+                           snake_class(self),
+                           finite = TRUE
+    )
+
+    # Trim off extra parameters
+    params <- params[intersect(names(params), self$parameters())]
+
+    args <- c(list(data = quote(data), scales = quote(scales)), params)
+    dapply(data, "PANEL", function(data) {
+      scales <- layout$get_scales(data$PANEL[1])
+      tryCatch(do.call(self$compute_panel, args), error = function(e) {
+        warning("Computation failed in `", snake_class(self), "()`:\n",
+                e$message, call. = FALSE)
+        new_data_frame()
+      })
+    })
+  },
+  compute_panel = function(data, scales) {
     if (is.null(data)) return(data)
     data <- data[order(data$group), ]
     nControls <- table(data$group)
@@ -247,6 +291,9 @@ GeomBezier0 <- ggproto('GeomBezier0', GeomPath,
                           lineend = 'butt', linejoin = 'round', linemitre = 1,
                           na.rm = FALSE) {
     coords <- coord$transform(data, panel_scales)
+    if (!is.integer(coords$group)) {
+      coords$group <- match(coords$group, unique(coords$group))
+    }
     startPoint <- match(unique(coords$group), coords$group)
     bezierGrob(coords$x, coords$y,
       id = coords$group, default.units = 'native',

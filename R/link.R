@@ -83,14 +83,37 @@ NULL
 #' @usage NULL
 #' @export
 StatLink <- ggproto('StatLink', Stat,
+  # .Deprecated - remove after next release
+  compute_layer = function(self, data, params, layout) {
+    if (is.null(data)) return(data)
+    data <- remove_missing(data, params$na.rm,
+                           c(self$required_aes, self$non_missing_aes),
+                           snake_class(self),
+                           finite = TRUE
+    )
+
+    # Trim off extra parameters
+    params <- params[intersect(names(params), self$parameters())]
+
+    args <- c(list(data = quote(data), scales = quote(scales)), params)
+    dapply(data, "PANEL", function(data) {
+      scales <- layout$get_scales(data$PANEL[1])
+      tryCatch(do.call(self$compute_panel, args), error = function(e) {
+        warning("Computation failed in `", snake_class(self), "()`:\n",
+                e$message, call. = FALSE)
+        new_data_frame()
+      })
+    })
+  },
   compute_panel = function(data, scales, n = 100) {
     extraCols <- !names(data) %in% c('x', 'y', 'xend', 'yend', 'group', 'PANEL')
+    data$group <- make.unique(as.character(data$group))
     data <- lapply(seq_len(nrow(data)), function(i) {
       path <- data.frame(
         x = seq(data$x[i], data$xend[i], length.out = n),
         y = seq(data$y[i], data$yend[i], length.out = n),
         index = seq(0, 1, length.out = n),
-        group = paste0(data$group[i], '_', i)
+        group = data$group[i]
       )
       cbind(path, data[rep(i, n), extraCols, drop = FALSE])
     })
