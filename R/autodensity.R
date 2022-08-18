@@ -1,4 +1,5 @@
 #' @rdname geom_autohistogram
+#' @inheritParams ggplot2::geom_point
 #' @inheritParams ggplot2::geom_density
 #' @export
 geom_autodensity <- function(mapping = NULL, data = NULL,
@@ -44,9 +45,9 @@ StatAutodensity <- ggproto('StatAutodensity', StatDensity,
   setup_params = function(data, params) {
     params$panel_range <- lapply(split(data$y, data$PANEL), function(y) {
       if (length(y) == 0) return()
-      range(y)
+      range(y, na.rm=TRUE)
     })
-    params$panel_count <- lapply(split(data$y, data$PANEL), length)
+    params$panel_count <- lapply(split(data$y, data$PANEL), function(y)length(y[is.finite(y)]))
 
     params
   },
