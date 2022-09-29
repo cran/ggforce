@@ -12,6 +12,8 @@
 #'
 #' - **x**
 #' - **y**
+#' - x0 *(used to anchor the label)*
+#' - y0 *(used to anchor the label)*
 #' - filter
 #' - label
 #' - description
@@ -70,23 +72,24 @@ NULL
 #' @format NULL
 #' @usage NULL
 #' @export
-GeomMarkRect <- ggproto('GeomMarkRect', GeomShape,
+GeomMarkRect <- ggproto('GeomMarkRect', GeomMarkCircle,
   setup_data = function(self, data, params) {
     if (!is.null(data$filter)) {
       self$removed <- data[!data$filter, c('x', 'y', 'PANEL')]
       data <- data[data$filter, ]
     }
-    do.call(rbind, lapply(split(data, data$group), function(d) {
+    if (nrow(data) == 0) return(data)
+    vec_rbind(!!!lapply(split(data, data$group), function(d) {
       if (nrow(d) == 1) return(d)
-      x_range <- range(d$x)
-      y_range <- range(d$y)
-      d_new <- data.frame(
+      x_range <- range(d$x, na.rm = TRUE)
+      y_range <- range(d$y, na.rm = TRUE)
+      d_new <- data_frame0(
         x = x_range[c(1, 1, 2, 2)],
         y = y_range[c(1, 2, 2, 1)]
       )
       d$x <- NULL
       d$y <- NULL
-      unique(cbind(d_new, d[rep(1, 4), ]))
+      unique0(cbind(d_new, d[rep(1, 4), ]))
     }))
   },
   draw_panel = function(self, data, panel_params, coord, expand = unit(5, 'mm'),
@@ -103,9 +106,12 @@ GeomMarkRect <- ggproto('GeomMarkRect', GeomShape,
                         con.cap = unit(3, 'mm'), con.arrow = NULL) {
     if (nrow(data) == 0) return(zeroGrob())
 
+    # As long as coord$transform() doesn't recognise x0/y0
+    data$xmin <- data$x0
+    data$ymin <- data$y0
     coords <- coord$transform(data, panel_params)
     if (!is.integer(coords$group)) {
-      coords$group <- match(coords$group, unique(coords$group))
+      coords$group <- match(coords$group, unique0(coords$group))
     }
     coords <- coords[order(coords$group), ]
 
@@ -135,7 +141,7 @@ GeomMarkRect <- ggproto('GeomMarkRect', GeomShape,
       mark.gp = gpar(
         col = first_rows$colour,
         fill = alpha(first_rows$fill, first_rows$alpha),
-        lwd = first_rows$size * .pt,
+        lwd = (first_rows$linewidth %||% first_rows$size) * .pt,
         lty = first_rows$linetype
       ),
       label.gp = gpar(
@@ -160,10 +166,11 @@ GeomMarkRect <- ggproto('GeomMarkRect', GeomShape,
       con.type = con.type,
       con.border = con.border,
       con.cap = con.cap,
-      con.arrow = con.arrow
+      con.arrow = con.arrow,
+      anchor.x = first_rows$xmin,
+      anchor.y = first_rows$ymin
     )
-  },
-  default_aes = GeomMarkCircle$default_aes
+  }
 )
 #' @rdname geom_mark_rect
 #' @export
@@ -226,7 +233,8 @@ rectEncGrob <- function(x = c(0, 0.5, 1, 0.5), y = c(0.5, 1, 0.5, 0), id = NULL,
                         label.minwidth = unit(50, 'mm'), label.hjust = 0,
                         label.buffer = unit(10, 'mm'), con.type = 'elbow',
                         con.border = 'one', con.cap = unit(3, 'mm'),
-                        con.arrow = NULL, vp = NULL) {
+                        con.arrow = NULL, anchor.x = NULL, anchor.y = NULL,
+                        vp = NULL) {
   mark <- shapeGrob(
     x = x, y = y, id = id, id.lengths = id.lengths,
     expand = expand, radius = radius,
@@ -256,30 +264,40 @@ rectEncGrob <- function(x = c(0, 0.5, 1, 0.5), y = c(0.5, 1, 0.5, 0), id = NULL,
   } else {
     labeldim <- NULL
   }
+  if (!is.null(anchor.x) && !is.unit(anchor.x)) {
+    anchor.x <- unit(anchor.x, default.units)
+  }
+  if (!is.null(anchor.y) && !is.unit(anchor.y)) {
+    anchor.y <- unit(anchor.y, default.units)
+  }
   gTree(
     mark = mark, label = label, labeldim = labeldim,
     buffer = label.buffer, ghosts = ghosts, con.gp = con.gp, con.type = con.type,
     con.cap = as_mm(con.cap, default.units), con.border = con.border,
-    con.arrow = con.arrow, name = name, vp = vp, cl = 'rect_enc'
+    con.arrow = con.arrow, anchor.x = anchor.x, anchor.y = anchor.y, name = name,
+    vp = vp, cl = 'rect_enc'
   )
 }
 #' @importFrom grid makeContent setChildren gList
 #' @export
 makeContent.rect_enc <- function(x) {
   mark <- x$mark
-  if (inherits(mark, 'shape')) makeContent(mark)
+  if (inherits(mark, 'shape')) mark <- makeContent(mark)
   if (!is.null(x$label)) {
     polygons <- Map(function(x, y) list(x = x, y = y),
       x = split(as.numeric(mark$x), mark$id),
       y = split(as.numeric(mark$y), mark$id)
     )
+    anchor_x <- if (is.null(x$anchor.x)) NULL else convertX(x$anchor.x, 'mm', TRUE)
+    anchor_y <- if (is.null(x$anchor.y)) NULL else convertY(x$anchor.y, 'mm', TRUE)
     labels <- make_label(
       labels = x$label, dims = x$labeldim, polygons = polygons,
       ghosts = x$ghosts, buffer = x$buffer, con_type = x$con.type,
       con_border = x$con.border, con_cap = x$con.cap,
-      con_gp = x$con.gp, anchor_mod = 3, arrow = x$con.arrow
+      con_gp = x$con.gp, anchor_mod = 3, anchor_x = anchor_x,
+      anchor_y = anchor_y, arrow = x$con.arrow
     )
-    setChildren(x, do.call(gList, c(list(mark), labels)))
+    setChildren(x, inject(gList(!!!c(list(mark), labels))))
   } else {
     setChildren(x, gList(mark))
   }

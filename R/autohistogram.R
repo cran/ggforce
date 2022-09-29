@@ -80,15 +80,16 @@ StatAutobin <- ggproto('StatAutobin', StatBin,
                            origin = NULL, right = NULL, drop = NULL,
                            width = NULL) {
     if (scales$x$is_discrete()) {
-      binned <- rbind_dfs(lapply(split(data, data$x), function(d) {
-        new_data_frame(list(
+      binned <- lapply(split(data, data$x), function(d) {
+        data_frame0(
           count = nrow(d),
           x = d$x[1],
           xmin = d$x[1] - 0.5,
           xmax = d$x[1] + 0.5,
           width = 1
-        ))
-      }))
+        )
+      })
+      binned <- vec_rbind(!!!binned)
       binned$density <- binned$count / sum(binned$count)
       binned$ncount <- binned$count / max(binned$count)
       binned$ndensity <- binned$density / max(binned$density)
@@ -116,13 +117,14 @@ StatAutobin <- ggproto('StatAutobin', StatBin,
 #' @usage NULL
 #' @export
 GeomAutorect <- ggproto('PositionAutorect', GeomRect,
-  draw_panel = function(self, data, panel_params, coord, linejoin = "mitre") {
+  draw_panel = function(self, data, panel_params, coord, ...) {
     y_range <- coord$range(panel_params)$y
     y_span <- y_range[2] - y_range[1]
     panel_min <- min(data$ymin)
     panel_span <- max(data$ymax) - panel_min
     data$ymin <- ((data$ymin - panel_min) / panel_span) * y_span * 0.9 + y_range[1]
     data$ymax <- ((data$ymax - panel_min) / panel_span) * y_span * 0.9 + y_range[1]
-    ggproto_parent(GeomRect, self)$draw_panel(data, panel_params, coord, linejoin)
-  }
+    ggproto_parent(GeomRect, self)$draw_panel(data, panel_params, coord, ...)
+  },
+  extra_params = c('na.rm', 'lineend', 'linejoin')
 )

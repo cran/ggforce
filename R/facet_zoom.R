@@ -34,7 +34,6 @@
 #'
 #' @family ggforce facets
 #'
-#' @importFrom rlang enquo
 #' @export
 #'
 #' @examples
@@ -74,7 +73,7 @@ facet_zoom <- function(x, y, xy, zoom.data, xlim = NULL, ylim = NULL,
   y <- if (missing(y)) if (missing(xy)) NULL else enquo(xy) else enquo(y)
   zoom.data <- if (missing(zoom.data)) NULL else enquo(zoom.data)
   if (is.null(x) && is.null(y) && is.null(xlim) && is.null(ylim)) {
-    stop('Either x- or y-zoom must be given', call. = FALSE)
+    cli::cli_abort('Either x- or y-zoom must be given')
   }
   if (!is.null(xlim)) x <- NULL
   if (!is.null(ylim)) y <- NULL
@@ -94,17 +93,13 @@ facet_zoom <- function(x, y, xy, zoom.data, xlim = NULL, ylim = NULL,
 #' grobTree rectGrob
 #' @importFrom gtable gtable_add_cols gtable_add_rows gtable_add_grob
 #' @importFrom scales rescale
-#' @importFrom rlang eval_tidy
 #' @export
 FacetZoom <- ggproto('FacetZoom', Facet,
   compute_layout = function(data, params) {
-    layout <- rbind(
-      data.frame(name = 'orig', SCALE_X = 1L, SCALE_Y = 1L),
-      data.frame(name = 'x', SCALE_X = 2L, SCALE_Y = 1L),
-      data.frame(name = 'y', SCALE_X = 1L, SCALE_Y = 2L),
-      data.frame(name = 'full', SCALE_X = 2L, SCALE_Y = 2L),
-      data.frame(name = 'orig_true', SCALE_X = 1L, SCALE_Y = 1L),
-      data.frame(name = 'zoom_true', SCALE_X = 1L, SCALE_Y = 1L)
+    layout <- data_frame0(
+      name = c('orig', 'x', 'y', 'full', 'orig_true', 'zoom_true'),
+      SCALE_X = c(1L, 2L, 1L, 2L, 1L, 1L),
+      SCALE_Y = c(1L, 1L, 2L, 2L, 1L, 1L)
     )
     if (is.null(params$y) && is.null(params$ylim)) {
       layout <- layout[c(1, 2, 5:6), ]
@@ -118,29 +113,29 @@ FacetZoom <- ggproto('FacetZoom', Facet,
     if (empty(data)) {
       return(cbind(data, PANEL = integer(0)))
     }
-    rbind(
+    vec_rbind(
       cbind(data, PANEL = 1L),
       if (!is.null(params$x)) {
-        index_x <- tryCatch(eval_tidy(params$x, data),
-                            error = function(e) FALSE)
+        index_x <- try_fetch(eval_tidy(params$x, data),
+                             error = function(e) FALSE)
         if (sum(index_x, na.rm = TRUE) != 0) {
           cbind(data[index_x, ], PANEL = layout$PANEL[layout$name == 'x'])
         }
       },
       if (!is.null(params$y)) {
-        index_y <- tryCatch(eval_tidy(params$y, data),
-                            error = function(e) FALSE)
+        index_y <- try_fetch(eval_tidy(params$y, data),
+                             error = function(e) FALSE)
         if (sum(index_y, na.rm = TRUE) != 0) {
           cbind(data[index_y, ], PANEL = layout$PANEL[layout$name == 'y'])
         }
       },
       if (!is.null(params$zoom.data)) {
-        zoom_data <- tryCatch(eval_tidy(params$zoom.data, data),
-                              error = function(e) NA)
+        zoom_data <- try_fetch(eval_tidy(params$zoom.data, data),
+                               error = function(e) NA)
         zoom_data <- rep(zoom_data, length.out = nrow(data))
         zoom_ind <- zoom_data | is.na(zoom_data)
         orig_ind <- !zoom_data | is.na(zoom_data)
-        rbind(
+        vec_rbind(
           cbind(data[zoom_ind, ], PANEL = if (any(zoom_ind)) layout$PANEL[layout$name == 'zoom_true'] else integer(0)),
           cbind(data[orig_ind, ], PANEL = if (any(orig_ind)) layout$PANEL[layout$name == 'orig_true'] else integer(0))
         )
@@ -148,19 +143,22 @@ FacetZoom <- ggproto('FacetZoom', Facet,
     )
   },
   train_scales = function(self, x_scales, y_scales, layout, data, params) {
+    # Remove any limits settings on the zoom panels
+    if (length(x_scales) > 1) x_scales[[2]]$limits <- NULL
+    if (length(y_scales) > 1) y_scales[[2]]$limits <- NULL
     # loop over each layer, training x and y scales in turn
     for (layer_data in data) {
       match_id <- match(layer_data$PANEL, layout$PANEL)
 
       if (!is.null(x_scales)) {
         if ('x' %in% layout$name && x_scales[[1]]$is_discrete()) {
-          stop('facet_zoom doesn\'t support zooming in discrete scales', call. = FALSE)
+          cli::cli_abort('facet_zoom doesn\'t support zooming in discrete scales')
         }
         x_vars <- intersect(x_scales[[1]]$aesthetics, names(layer_data))
         SCALE_X <- layout$SCALE_X[match_id]
 
         if (!is.null(params$xlim)) {
-          x_scales[[2]]$train(params$xlim)
+          x_scales[[2]]$train(x_scales[[2]]$transform(params$xlim))
           scale_apply(layer_data, x_vars, 'train', SCALE_X, x_scales[-2])
         } else {
           scale_apply(layer_data, x_vars, 'train', SCALE_X, x_scales)
@@ -169,13 +167,13 @@ FacetZoom <- ggproto('FacetZoom', Facet,
 
       if (!is.null(y_scales)) {
         if ('y' %in% layout$name && y_scales[[1]]$is_discrete()) {
-          stop('facet_zoom doesn\'t support zooming in discrete scales', call. = FALSE)
+          cli::cli_abort('facet_zoom doesn\'t support zooming in discrete scales')
         }
         y_vars <- intersect(y_scales[[1]]$aesthetics, names(layer_data))
         SCALE_Y <- layout$SCALE_Y[match_id]
 
         if (!is.null(params$ylim)) {
-          y_scales[[2]]$train(params$ylim)
+          y_scales[[2]]$train(y_scales[[2]]$transform(params$ylim))
           scale_apply(layer_data, y_vars, 'train', SCALE_Y, y_scales[-2])
         } else {
           scale_apply(layer_data, y_vars, 'train', SCALE_Y, y_scales)
@@ -186,7 +184,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
   finish_data = function(data, layout, x_scales, y_scales, params) {
     plot_panels <- which(!grepl('_true', layout$name))
     data <- if (is.null(params$zoom.data)) {
-      do.call(rbind, lapply(layout$PANEL[plot_panels], function(panel) {
+      vec_rbind(!!!lapply(layout$PANEL[plot_panels], function(panel) {
         d <- data[data$PANEL == 1, ]
         d$PANEL <- panel
         d
@@ -197,7 +195,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
       orig_data <- data[data$PANEL == orig_pan, ]
       orig_data$PANEL <- if (nrow(orig_data) != 0) 1L else integer(0)
       zoom_data <- data[data$PANEL == zoom_pan, ]
-      rbind(orig_data, do.call(rbind, lapply(plot_panels[-1], function(panel) {
+      vec_rbind(orig_data, vec_rbind(!!!lapply(plot_panels[-1], function(panel) {
         zoom_data$PANEL <- if (nrow(zoom_data) != 0) panel else integer(0)
         zoom_data
       })))
@@ -208,22 +206,17 @@ FacetZoom <- ggproto('FacetZoom', Facet,
   draw_panels = function(self, panels, layout, x_scales, y_scales, ranges, coord,
                          data, theme, params) {
     if (inherits(coord, 'CoordFlip')) {
-      stop('facet_zoom currently doesn\'t work with flipped scales', call. = FALSE)
+      cli::cli_abort('facet_zoom doesn\'t work with flipped scales')
     }
     if (is.null(params$x) && is.null(params$xlim)) {
       params$horizontal <- TRUE
     } else if (is.null(params$y) && is.null(params$ylim)) {
       params$horizontal <- FALSE
     }
-    if (is.null(theme[['zoom']])) {
-      theme$zoom <- theme$strip.background
-    }
-    if (is.null(theme$zoom.x)) {
-      theme$zoom.x <- theme$zoom
-    }
-    if (is.null(theme$zoom.y)) {
-      theme$zoom.y <- theme$zoom
-    }
+
+    zoom_x <- calc_element('zoom.x', theme)
+    zoom_y <- calc_element('zoom.y', theme)
+
     # Construct the panels
     axes <- render_axes(ranges, ranges, coord, theme, FALSE)
     panelGrobs <- create_panels(panels, axes$x, axes$y)
@@ -234,14 +227,14 @@ FacetZoom <- ggproto('FacetZoom', Facet,
     }
 
     if ('y' %in% layout$name) {
-      if (!inherits(theme$zoom.y, 'element_blank')) {
+      if (!inherits(zoom_y, 'element_blank')) {
         zoom_prop <- rescale(y_scales[[2]]$dimension(expansion(y_scales[[2]])),
           from = y_scales[[1]]$dimension(expansion(y_scales[[1]]))
         )
         indicator <- polygonGrob(
           c(1, 1, 0, 0),
           c(zoom_prop, 1, 0),
-          gp = gpar(col = NA, fill = alpha(theme$zoom.y$fill, 0.5))
+          gp = gpar(col = NA, fill = alpha(zoom_y$fill, 0.5))
         )
         lines <- segmentsGrob(
           y0 = c(0, 1),
@@ -249,9 +242,9 @@ FacetZoom <- ggproto('FacetZoom', Facet,
           y1 = zoom_prop,
           x1 = c(1, 1),
           gp = gpar(
-            col = theme$zoom.y$colour,
-            lty = theme$zoom.y$linetype,
-            lwd = theme$zoom.y$size,
+            col = zoom_y$colour,
+            lty = zoom_y$linetype,
+            lwd = (zoom_y$linewidth %||% zoom_y$size) * .pt,
             lineend = 'round'
           )
         )
@@ -261,14 +254,14 @@ FacetZoom <- ggproto('FacetZoom', Facet,
       }
     }
     if ('x' %in% layout$name) {
-      if (!inherits(theme$zoom.x, 'element_blank')) {
+      if (!inherits(zoom_x, 'element_blank')) {
         zoom_prop <- rescale(x_scales[[2]]$dimension(expansion(x_scales[[2]])),
           from = x_scales[[1]]$dimension(expansion(x_scales[[1]]))
         )
         indicator <- polygonGrob(
           c(zoom_prop, 1, 0),
           c(1, 1, 0, 0),
-          gp = gpar(col = NA, fill = alpha(theme$zoom.x$fill, 0.5))
+          gp = gpar(col = NA, fill = alpha(zoom_x$fill, 0.5))
         )
         lines <- segmentsGrob(
           x0 = c(0, 1),
@@ -276,9 +269,9 @@ FacetZoom <- ggproto('FacetZoom', Facet,
           x1 = zoom_prop,
           y1 = c(1, 1),
           gp = gpar(
-            col = theme$zoom.x$colour,
-            lty = theme$zoom.x$linetype,
-            lwd = theme$zoom.x$size,
+            col = zoom_x$colour,
+            lty = zoom_x$linetype,
+            lwd = (zoom_x$linewidth %||% zoom_x$size) * .pt,
             lineend = 'round'
           )
         )
@@ -361,28 +354,22 @@ FacetZoom <- ggproto('FacetZoom', Facet,
     final
   },
   draw_back = function(data, layout, x_scales, y_scales, theme, params) {
-    if (is.null(theme[['zoom']])) {
-      theme$zoom <- theme$strip.background
-    }
-    if (is.null(theme$zoom.x)) {
-      theme$zoom.x <- theme$zoom
-    }
-    if (is.null(theme$zoom.y)) {
-      theme$zoom.y <- theme$zoom
-    }
+    zoom_x <- calc_element('zoom.x', theme)
+    zoom_y <- calc_element('zoom.y', theme)
+
     if (!(is.null(params$x) && is.null(params$xlim)) &&
-        params$show.area && !inherits(theme$zoom.x, 'element_blank')) {
+        params$show.area && !inherits(zoom_x, 'element_blank')) {
       zoom_prop <- rescale(x_scales[[2]]$dimension(expansion(x_scales[[2]])),
         from = x_scales[[1]]$dimension(expansion(x_scales[[1]]))
       )
       x_back <- grobTree(
         rectGrob(x = mean(zoom_prop), y = 0.5, width = diff(zoom_prop),
                  height = 1,
-                 gp = gpar(col = NA, fill = alpha(theme$zoom.x$fill, 0.5))),
+                 gp = gpar(col = NA, fill = alpha(zoom_x$fill, 0.5))),
         segmentsGrob(zoom_prop, c(0, 0), zoom_prop, c(1, 1), gp = gpar(
-          col = theme$zoom.x$colour,
-          lty = theme$zoom.x$linetype,
-          lwd = theme$zoom.x$size,
+          col = zoom_x$colour,
+          lty = zoom_x$linetype,
+          lwd = (zoom_x$linewidth %||% zoom_x$size) * .pt,
           lineend = 'round'
         ))
       )
@@ -390,18 +377,18 @@ FacetZoom <- ggproto('FacetZoom', Facet,
       x_back <- zeroGrob()
     }
     if (!(is.null(params$y) && is.null(params$ylim)) &&
-        params$show.area && !inherits(theme$zoom.y, 'element_blank')) {
+        params$show.area && !inherits(zoom_y, 'element_blank')) {
       zoom_prop <- rescale(y_scales[[2]]$dimension(expansion(y_scales[[2]])),
         from = y_scales[[1]]$dimension(expansion(y_scales[[1]]))
       )
       y_back <- grobTree(
         rectGrob(y = mean(zoom_prop), x = 0.5, height = diff(zoom_prop),
                  width = 1,
-                 gp = gpar(col = NA, fill = alpha(theme$zoom.y$fill, 0.5))),
+                 gp = gpar(col = NA, fill = alpha(zoom_y$fill, 0.5))),
         segmentsGrob(y0 = zoom_prop, x0 = c(0, 0), y1 = zoom_prop, x1 = c(1, 1),
-                     gp = gpar(col = theme$zoom.y$colour,
-                               lty = theme$zoom.y$linetype,
-                               lwd = theme$zoom.y$size,
+                     gp = gpar(col = zoom_y$colour,
+                               lty = zoom_y$linetype,
+                               lwd = (zoom_y$linewidth %||% zoom_y$size) * .pt,
                                lineend = 'round'
                              )
                      )
@@ -420,17 +407,17 @@ FacetZoom <- ggproto('FacetZoom', Facet,
 #' @importFrom grid grobHeight grobWidth unit unit.c
 #' @importFrom gtable gtable gtable_add_grob
 create_panels <- function(panels, x.axis, y.axis) {
-  Map(function(panel, x, y) {
+  Map(function(panel, x, y, i) {
     heights <- unit.c(grobHeight(x$top), unit(1, 'null'), grobHeight(x$bottom))
     widths <- unit.c(grobWidth(y$left), unit(1, 'null'), grobWidth(y$right))
     table <- gtable(widths, heights)
-    table <- gtable_add_grob(table, panel, t = 2, l = 2, z = 10, clip = 'on',
-                             name = 'panel')
-    table <- gtable_add_grob(table, x, t = c(1, 3), l = 2, z = 20, clip = 'off',
-                             name = c('axis-t', 'axis-b'))
-    table <- gtable_add_grob(table, y, t = 2, l = c(1, 3), z = 20, clip = 'off',
-                             name = c('axis-l', 'axis-r'))
-  }, panel = panels, x = x.axis, y = y.axis)
+    table <- gtable_add_grob(table, panel, t = 2, l = 2, z = 2, clip = 'on',
+                             name = paste0('panel-', i))
+    table <- gtable_add_grob(table, x, t = c(1, 3), l = 2, z = 4, clip = 'off',
+                             name = paste0(c('axis-t-', 'axis-b-'), i))
+    table <- gtable_add_grob(table, y, t = 2, l = c(1, 3), z = 4, clip = 'off',
+                             name = paste0(c('axis-l-', 'axis-r-'), i))
+  }, panel = panels, x = x.axis, y = y.axis, i = seq_along(panels))
 }
 
 expansion <- function(scale, discrete = c(0, 0.6), continuous = c(0.05, 0)) {
@@ -447,6 +434,13 @@ expansion <- function(scale, discrete = c(0, 0.6), continuous = c(0.05, 0)) {
 
 # Helpers -----------------------------------------------------------------
 
+split_with_index <- function(x, f, n = max(f)) {
+  if (n == 1) return(list(x))
+  f <- as.integer(f)
+  attributes(f) <- list(levels = as.character(seq_len(n)), class = "factor")
+  unname(split(x, f))
+}
+
 # Function for applying scale method to multiple variables in a given
 # data set.  Implement in such a way to minimize copying and hence maximise
 # speed
@@ -454,17 +448,19 @@ scale_apply <- function(data, vars, method, scale_id, scales) {
   if (length(vars) == 0) return()
   if (nrow(data) == 0) return()
 
-  if (any(is.na(scale_id))) stop()
+  if (any(is.na(scale_id))) {
+    cli::cli_abort("{.arg scale_id} must not contain any {.val NA}")
+  }
 
-  scale_index <- split_indices(scale_id)
+  scale_index <- split_with_index(seq_along(scale_id), scale_id, length(scales))
 
   lapply(vars, function(var) {
     pieces <- lapply(seq_along(scales), function(i) {
       scales[[i]][[method]](data[[var]][scale_index[[i]]])
     })
-    # Join pieces back together, if necessary
-    if (!is.null(pieces)) {
-      unlist(pieces)[order(unlist(scale_index))]
-    }
+    # Remove empty vectors to avoid coercion issues with vctrs
+    pieces[lengths(pieces) == 0] <- NULL
+    o <- order(unlist(scale_index))[seq_len(sum(lengths(pieces)))]
+    vec_c(!!!pieces)[o]
   })
 }

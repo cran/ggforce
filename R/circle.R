@@ -23,7 +23,7 @@ NULL
 #' - **r**
 #' - color
 #' - fill
-#' - size
+#' - linewidth
 #' - linetype
 #' - alpha
 #' - lineend
@@ -69,6 +69,9 @@ NULL
 #' @export
 StatCircle <- ggproto('StatCircle', Stat,
   compute_panel = function(data, scales, n = 360) {
+    # Avoid some weird interaction if x and y are mapped at the global level
+    data$x <- NULL
+    data$y <- NULL
     data$start <- 0
     data$end <- 2 * pi
     arcPaths(data, n + 1)
@@ -92,10 +95,7 @@ stat_circle <- function(mapping = NULL, data = NULL, geom = 'circle',
 #' @usage NULL
 #' @export
 GeomCircle <- ggproto('GeomCircle', GeomShape,
-  default_aes = list(
-    colour = 'black', fill = NA, size = 0.5, linetype = 1,
-    alpha = NA
-  )
+  default_aes = combine_aes(GeomShape$default_aes, aes(colour = 'black', fill = NA))
 )
 #' @rdname geom_circle
 #' @inheritParams geom_shape

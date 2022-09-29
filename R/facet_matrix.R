@@ -49,7 +49,6 @@
 #' [position_auto] for geoms and positions that adapts to different positional
 #' scale types
 #'
-#' @importFrom rlang is_quosures quos
 #' @export
 #'
 #' @examples
@@ -95,18 +94,21 @@
 #'   facet_matrix(rows = vars(cty, hwy), cols = vars(drv, fl))
 #'
 facet_matrix <- function(rows, cols = rows, shrink = TRUE, switch = NULL,
-                         flip.rows = FALSE, alternate.axes = FALSE, layer.lower = NULL,
+                         labeller = "label_value", flip.rows = FALSE,
+                         alternate.axes = FALSE, layer.lower = NULL,
                          layer.diag = NULL, layer.upper = NULL,
                          layer.continuous = NULL, layer.discrete = NULL,
                          layer.mixed = NULL, grid.y.diag = TRUE) {
   if (!is_quosures(rows)) rows <- quos(rows)
   if (!is_quosures(cols)) cols <- quos(cols)
 
+  labeller <- utils::getFromNamespace('check_labeller', 'ggplot2')(labeller)
+
   ggproto(NULL, FacetMatrix,
     shrink = shrink,
     params = list(rows = quos(row_data = row_data), cols = quos(col_data = col_data),
                   row_vars = rows, col_vars = cols, switch = switch,
-                  free = list(x = TRUE, y = TRUE),
+                  labeller = labeller, free = list(x = TRUE, y = TRUE),
                   space_free = list(x = FALSE, y = FALSE), margins = FALSE,
                   as.table = !flip.rows, drop = TRUE, labeller = label_value,
                   alternate.axes = alternate.axes,
@@ -120,7 +122,6 @@ facet_matrix <- function(rows, cols = rows, shrink = TRUE, switch = NULL,
 #' @format NULL
 #' @usage NULL
 #' @importFrom tidyselect eval_select
-#' @importFrom rlang caller_env quo rep_along
 #' @export
 FacetMatrix <- ggproto('FacetMatrix', FacetGrid,
   setup_data = function(data, params) {
@@ -134,13 +135,13 @@ FacetMatrix <- ggproto('FacetMatrix', FacetGrid,
     rows <- lapply(data, function(d) {
       names(eval_select(quo(c(!!!params$row_vars)), d))
     })
-    rows <- unique(unlist(rows))
+    rows <- unique0(unlist(rows))
     cols <- lapply(data, function(d) {
       names(eval_select(quo(c(!!!params$col_vars)), d))
     })
-    cols <- unique(unlist(cols))
+    cols <- unique0(unlist(cols))
     if (length(rows) == 0 || length(cols) == 0) {
-      stop('rows and cols must contain valid data columns')
+      cli::cli_abort('{.arg rows} and {.arg cols} must select valid data columns')
     }
     params$pairs <- all(rows == cols)
     if (!params$as.table) rows <- rev(rows)
@@ -187,7 +188,7 @@ FacetMatrix <- ggproto('FacetMatrix', FacetGrid,
   map_data = function(data, layout, params) {
     layer_pos <- params$layer_pos[[data$.layer_index[1]]]
     layer_type <- params$layer_type[[data$.layer_index[1]]]
-    rbind_dfs(lapply(seq_len(nrow(layout)), function(i) {
+    data <- lapply(seq_len(nrow(layout)), function(i) {
       row <- layout$row_data[i]
       col <- layout$col_data[i]
       col_discrete <- params$col_scales[[layout$SCALE_X[i]]]$is_discrete()
@@ -203,8 +204,17 @@ FacetMatrix <- ggproto('FacetMatrix', FacetGrid,
       data$PANEL <- layout$PANEL[i]
       data$.panel_x <- params$col_scales[[col]]$map(data[[col]])
       data$.panel_y <- params$row_scales[[row]]$map(data[[row]])
+      if (packageVersion('ggplot2') <= '3.3.6') {
+        if (inherits(data$.panel_x, 'mapped_discrete')) {
+          data$.panel_x <- unclass(data$.panel_x)
+        }
+        if (inherits(data$.panel_y, 'mapped_discrete')) {
+          data$.panel_y <- unclass(data$.panel_y)
+        }
+      }
       data
-    }))
+    })
+    vec_rbind(!!!data)
   },
   init_scales = function(layout, x_scale = NULL, y_scale = NULL, params) {
     scales <- list()
@@ -255,7 +265,7 @@ create_pos_scales <- function(vars, data, env, dim = 'x', alternate = FALSE) {
     })
     scales <- scales[lengths(scales) != 0]
     if (length(scales) == 0) {
-      stop('Unable to pick a scale for ', var, call. = FALSE)
+      cli::cli_abort('Unable to pick a scale for {.col {var}}')
     }
     scale <- scales[[1]](name = NULL, position = pos)
     lapply(d, scale$train)
@@ -277,7 +287,7 @@ assign_layers <- function(n_layers, ...) {
     }
   })
 
-  specified_layers <- sort(unique(unlist(specs)))
+  specified_layers <- sort(unique0(unlist(specs)))
   specified_layers <- layers %in% specified_layers
 
   specs <- lapply(specs, function(spec) {
@@ -297,7 +307,7 @@ check_layer_pos_params <- function(pairs = TRUE, lower = NULL, upper = NULL, dia
   if (pairs) return()
 
   if (!all(is.null(lower), is.null(upper), is.null(diag))) {
-    warning('layer positions are ignored when the matrix is not symmetrical', call. = FALSE)
+    cli::cli_warn('layer positions are ignored when the matrix is not symmetrical')
   }
 }
 

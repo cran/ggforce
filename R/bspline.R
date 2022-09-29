@@ -16,7 +16,7 @@
 #'  - **x**
 #'  - **y**
 #'  - color
-#'  - size
+#'  - linewidth
 #'  - linetype
 #'  - alpha
 #'  - lineend
@@ -74,7 +74,7 @@
 #' paths$class <- cp$class[paths$ind]
 #'
 #' ggplot(paths) +
-#'   geom_bspline(aes(x = x, y = y, group = group, colour = ..index..)) +
+#'   geom_bspline(aes(x = x, y = y, group = group, colour = after_stat(index))) +
 #'   geom_point(aes(x = x, y = y), data = cp, color = 'steelblue')
 #'
 #' ggplot(paths) +
@@ -94,20 +94,20 @@ NULL
 #' @export
 StatBspline <- ggproto('StatBspline', Stat,
   compute_layer = function(self, data, params, panels) {
-    if (is.null(data)) return(data)
+    if (empty_data(data)) return(data)
     data <- data[order(data$group), ]
-    groups <- unique(data$group)
+    groups <- unique0(data$group)
     paths <- getSplines(data$x, data$y, match(data$group, groups), params$n,
                         params$type %||% 'clamped')
-    paths <- data.frame(
+    paths <- data_frame0(
       x = paths$paths[, 1], y = paths$paths[, 2],
       group = groups[paths$pathID]
     )
     paths$index <- rep(
       seq(0, 1, length.out = params$n),
-      length(unique(data$group))
+      length(unique0(data$group))
     )
-    dataIndex <- rep(match(unique(data$group), data$group), each = params$n)
+    dataIndex <- rep(match(unique0(data$group), data$group), each = params$n)
     cbind(
       paths,
       data[dataIndex, !names(data) %in% c('x', 'y', 'group'), drop = FALSE]
@@ -149,24 +149,24 @@ geom_bspline <- function(mapping = NULL, data = NULL, stat = 'bspline',
 #' @export
 StatBspline2 <- ggproto('StatBspline2', Stat,
   compute_layer = function(self, data, params, panels) {
-    if (is.null(data)) return(data)
+    if (empty_data(data)) return(data)
     data <- data[order(data$group), ]
     nControls <- table(data$group)
-    groups <- unique(data$group)
+    groups <- unique0(data$group)
     paths <- getSplines(data$x, data$y, match(data$group, groups), params$n,
                         params$type %||% 'clamped')
-    paths <- data.frame(
+    paths <- data_frame0(
       x = paths$paths[, 1], y = paths$paths[, 2],
       group = groups[paths$pathID]
     )
     paths$index <- rep(
       seq(0, 1, length.out = params$n),
-      length(unique(data$group))
+      length(unique0(data$group))
     )
-    dataIndex <- rep(match(unique(data$group), data$group), each = params$n)
+    dataIndex <- rep(match(unique0(data$group), data$group), each = params$n)
     paths <- cbind(paths, data[dataIndex, 'PANEL', drop = FALSE])
     extraCols <- !names(data) %in% c('x', 'y', 'group', 'PANEL')
-    pathIndex <- match(unique(data$group), paths$group)
+    pathIndex <- match(unique0(data$group), paths$group)
     pathIndex <- unlist(Map(seq, from = pathIndex, length.out = nControls))
     paths$.interp <- TRUE
     paths$.interp[pathIndex] <- FALSE
@@ -219,15 +219,15 @@ GeomBspline0 <- ggproto('GeomBspline0', GeomPath,
                           linemitre = 1, na.rm = FALSE) {
     coords <- coord$transform(data, panel_scales)
     if (!is.integer(coords$group)) {
-      coords$group <- match(coords$group, unique(coords$group))
+      coords$group <- match(coords$group, unique0(coords$group))
     }
-    startPoint <- match(unique(coords$group), coords$group)
+    startPoint <- match(unique0(coords$group), coords$group)
     xsplineGrob(coords$x, coords$y,
       id = coords$group, default.units = 'native',
       shape = 1, arrow = arrow, repEnds = type == 'clamped',
       gp = gpar(
         col = alpha(coords$colour[startPoint], coords$alpha[startPoint]),
-        lwd = coords$size[startPoint] * .pt,
+        lwd = (coords$linewidth[startPoint] %||% coords$size[startPoint]) * .pt,
         lty = coords$linetype[startPoint], lineend = lineend,
         linejoin = linejoin, linemitre = linemitre
       )

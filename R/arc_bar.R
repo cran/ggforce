@@ -30,7 +30,7 @@ NULL
 #' - explode
 #' - color
 #' - fill
-#' - size
+#' - linewidth
 #' - linetype
 #' - alpha
 #'
@@ -85,8 +85,7 @@ NULL
 #'   type = rep(c('Pie', 'Donut'), each = 5),
 #'   r0 = rep(c(0, 0.8), each = 5),
 #'   focus = rep(c(0.2, 0, 0, 0, 0), 2),
-#'   amount = c(4, 3, 1, 1.5, 6, 6, 1, 2, 3, 2),
-#'   stringsAsFactors = FALSE
+#'   amount = c(4, 3, 1, 1.5, 6, 6, 1, 2, 3, 2)
 #' )
 #'
 #' # Look at the cakes
@@ -135,14 +134,17 @@ StatPie <- ggproto('StatPie', Stat,
       angles <- cumsum(df$amount)
       seps <- cumsum(sep * seq_along(angles))
       if (max(seps) >= 2 * pi) {
-        stop('Total separation exceeds circle circumference. Try lowering "sep"')
+        cli::cli_abort(c(
+          'Total separation exceeds circle circumference',
+          i = 'Try lowering {.arg sep}.'
+        ))
       }
       angles <- angles / max(angles) * (2 * pi - max(seps))
-      new_data_frame(c(df, list(
+      data_frame0(
+        df,
         start = c(0, angles[-length(angles)]) + c(0, seps[-length(seps)]) + sep / 2,
-        end = angles + seps - sep / 2,
-        stringsAsFactors = FALSE
-      )))
+        end = angles + seps - sep / 2
+      )
     })
     arcPaths(as.data.frame(data), n)
   },
@@ -166,10 +168,7 @@ stat_pie <- function(mapping = NULL, data = NULL, geom = 'arc_bar',
 #' @usage NULL
 #' @export
 GeomArcBar <- ggproto('GeomArcBar', GeomShape,
-  default_aes = list(
-    colour = 'black', fill = NA, size = 0.5, linetype = 1,
-    alpha = NA
-  )
+  default_aes = combine_aes(GeomShape$default_aes, aes(colour = 'black', fill = NA))
 )
 #' @rdname geom_arc_bar
 #' @inheritParams geom_shape
@@ -188,11 +187,13 @@ geom_arc_bar <- function(mapping = NULL, data = NULL, stat = 'arc_bar',
 # This function is like base::make.unique, but it
 # maintains the ordering of the original names if the values
 # are sorted.
-
-make_unique <- function(names, sep = ".") {
-  n <- length(names)
-  width <- floor(log10(n)) + 1
-  sprintf("%s%s%0*d", names, sep, width, seq_len(n))
+make_unique <- function(x, sep = '.') {
+  if (!anyDuplicated(x)) return(x)
+  groups <- match(x, unique(x))
+  suffix <- unsplit(lapply(split(x, groups), seq_along), groups)
+  max_chars <- nchar(max(suffix))
+  suffix_format <- paste0('%0', max_chars, 'd')
+  paste0(x, sep, sprintf(suffix_format, suffix))
 }
 
 arcPaths <- function(data, n) {
@@ -203,20 +204,20 @@ arcPaths <- function(data, n) {
   extraData <- !names(data) %in% c('r0', 'r', 'start', 'end', 'group')
   data$group <- make_unique(as.character(data$group))
   paths <- lapply(seq_len(nrow(data)), function(i) {
-    path <- data.frame(
+    path <- data_frame0(
       a = seq(data$start[i], data$end[i], length.out = data$nControl[i]),
       r = data$r[i]
     )
     if ('r0' %in% names(data)) {
       if (data$r0[i] != 0) {
-        path <- rbind(
+        path <- vec_rbind(
           path,
-          data.frame(a = rev(path$a), r = data$r0[i])
+          data_frame0(a = rev(path$a), r = data$r0[i])
         )
       } else {
-        path <- rbind(
+        path <- vec_rbind(
           path,
-          data.frame(a = data$start[i], r = 0)
+          data_frame0(a = data$start[i], r = 0)
         )
       }
     }
@@ -224,7 +225,7 @@ arcPaths <- function(data, n) {
     path$index <- seq(0, 1, length.out = nrow(path))
     path <- cbind(path, data[rep(i, nrow(path)), extraData, drop = FALSE])
   })
-  paths <- do.call(rbind, paths)
+  paths <- vec_rbind(!!!paths)
   paths <- cbind(
     paths[, !names(paths) %in% c('r', 'a')],
     trans$transform(paths$r, paths$a)
@@ -256,19 +257,22 @@ arcPaths2 <- function(data, n) {
   extraTemplate <- data[1, extraData, drop = FALSE]
   paths <- lapply(split(seq_len(nrow(data)), data$group), function(i) {
     if (length(i) != 2) {
-      stop('Arcs must be defined by two end points', call. = FALSE)
+      cli::cli_abort(c(
+        'Arcs must be defined by two end points',
+        i = 'Make sure each group consists of two rows'
+      ))
     }
     if (data$r[i[1]] != data$r[i[2]] ||
       data$x0[i[1]] != data$x0[i[2]] ||
       data$y0[i[1]] != data$y0[i[2]]) {
-      stop('Both end points must be at same radius and with same center',
-        call. = FALSE
+      cli::cli_abort(
+        'Both end points in each arc must be at same radius ({.arg r}) and with same center ({.arg {c("x0", "y0")}})'
       )
     }
     if (data$end[i[1]] == data$end[i[2]]) return()
     nControl <- ceiling(fullCirc * abs(diff(data$end[i])))
     if (nControl < 3) nControl <- 3
-    path <- data.frame(
+    path <- data_frame0(
       a = seq(data$end[i[1]], data$end[i[2]], length.out = nControl),
       r = data$r[i[1]],
       x0 = data$x0[i[1]],
@@ -285,7 +289,7 @@ arcPaths2 <- function(data, n) {
     }
     path
   })
-  paths <- do.call(rbind, paths)
+  paths <- vec_rbind(!!!paths)
   paths <- cbind(
     paths[, !names(paths) %in% c('r', 'a')],
     trans$transform(paths$r, paths$a)

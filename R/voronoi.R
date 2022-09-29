@@ -93,7 +93,7 @@ NULL
 #' ggplot(iris, aes(Sepal.Length, Sepal.Width, group = -1L)) +
 #'   geom_voronoi_tile(aes(fill = Species)) +
 #'   geom_voronoi_segment() +
-#'   geom_text(aes(label = stat(nsides), size = stat(vorarea)),
+#'   geom_text(aes(label = after_stat(nsides), size = after_stat(vorarea)),
 #'     stat = 'delvor_summary', switch.centroid = TRUE
 #'   )
 #'
@@ -134,14 +134,14 @@ NULL
 #' @export
 StatVoronoiTile <- ggproto('StatVoronoiTile', Stat,
   setup_params = function(self, data, params) {
-    try_require('deldir', snake_class(self))
+    check_installed('deldir', 'to calculate voronoi tesselation')
     params
   },
   compute_group = function(self, data, scales, bound = NULL, eps = 1e-9,
                            max.radius = NULL, normalize = FALSE, asp.ratio = 1) {
     data$group <- paste0(seq_len(nrow(data)), ':', data$group)
     if (any(duplicated(data[, c('x', 'y')]))) {
-      warning('stat_voronoi_tile: dropping duplicated points', call. = FALSE)
+      cli::cli_warn('{.fn {snake_class(self)}} is dropping duplicated points')
     }
     polybound <- NULL
     if (is.null(bound)) {
@@ -214,13 +214,13 @@ geom_voronoi_tile <- function(mapping = NULL, data = NULL, stat = 'voronoi_tile'
 #' @export
 StatVoronoiSegment <- ggproto('StatVoronoiSegment', Stat,
   setup_params = function(self, data, params) {
-    try_require('deldir', snake_class(self))
+    check_installed('deldir', 'to calculate voronoi tesselation')
     params
   },
   compute_group = function(self, data, scales, bound = NULL, eps = 1e-9,
                            normalize = FALSE, asp.ratio = 1) {
     if (any(duplicated(data[, c('x', 'y')]))) {
-      warning('stat_voronoi_segment: dropping duplicated points', call. = FALSE)
+      cli::cli_warn('{.fn {snake_class(self)}} is dropping duplicated points')
     }
     if (normalize) {
       x_range <- range(data$x, na.rm = TRUE, finite = TRUE)
@@ -274,10 +274,10 @@ geom_voronoi_segment <- function(mapping = NULL, data = NULL,
 #' @export
 StatDelaunayTile <- ggproto('StatDelaunayTile', Stat,
   setup_params = function(self, data, params) {
-    try_require('deldir', snake_class(self))
+    check_installed('deldir', 'to calculate delaunay triangulation')
     params
   },
-  compute_group = function(data, scales, bound = NULL, eps = 1e-9,
+  compute_group = function(self, data, scales, bound = NULL, eps = 1e-9,
                            normalize = FALSE, asp.ratio = 1) {
     if (normalize) {
       x_range <- range(data$x, na.rm = TRUE, finite = TRUE)
@@ -291,19 +291,19 @@ StatDelaunayTile <- ggproto('StatDelaunayTile', Stat,
     }
     data <- lapply(split(data, data$group), function(d) {
       if (any(duplicated(d[, c('x', 'y')]))) {
-        warning('stat_delaunay_tile: dropping duplicated points', call. = FALSE)
+        cli::cli_warn('{.fn {snake_class(self)}} is dropping duplicated points')
       }
       vor <- deldir::deldir(d$x, d$y, rw = bound, eps = eps,
                             suppressMsge = TRUE)
       d <- to_triangle(vor)
-      d$group <- paste(data$group[1], '_', match(d$group, unique(d$group)))
+      d$group <- paste(data$group[1], '_', match(d$group, unique0(d$group)))
       d
     })
     for (i in seq_len(length(data) - 1) + 1) {
       max_group <- max(data[[i - 1]]$group)
       data[[i]]$group <- data[[i]]$group + max_group
     }
-    data <- do.call(rbind, data)
+    data <- vec_rbind(!!!data)
     if (normalize) {
       data$x <- rescale(data$x / asp.ratio, to = x_range, from = c(0, 1))
       data$y <- rescale(data$y, to = y_range, from = c(0, 1))
@@ -338,14 +338,13 @@ geom_delaunay_tile <- function(mapping = NULL, data = NULL,
 #' @export
 StatDelaunaySegment <- ggproto('StatDelaunaySegment', Stat,
   setup_params = function(self, data, params) {
-    try_require('deldir', snake_class(self))
+    check_installed('deldir', 'to calculate delaunay triangulation')
     params
   },
-  compute_group = function(data, scales, bound = NULL, eps = 1e-9,
+  compute_group = function(self, data, scales, bound = NULL, eps = 1e-9,
                            normalize = FALSE, asp.ratio = 1) {
     if (any(duplicated(data[, c('x', 'y')]))) {
-      warning('stat_delaunay_segment: dropping duplicated points',
-              call. = FALSE)
+      cli::cli_warn('{.fn {snake_class(self)}} is dropping duplicated points')
     }
     if (normalize) {
       x_range <- range(data$x, na.rm = TRUE, finite = TRUE)
@@ -400,14 +399,13 @@ geom_delaunay_segment <- function(mapping = NULL, data = NULL,
 #' @export
 StatDelaunaySegment2 <- ggproto('StatDelaunaySegment2', Stat,
   setup_params = function(self, data, params) {
-    try_require('deldir', snake_class(self))
+    check_installed('deldir', 'to calculate delaunay triangulation')
     params
   },
-  compute_group = function(data, scales, bound = NULL, eps = 1e-9, n = 100,
+  compute_group = function(self, data, scales, bound = NULL, eps = 1e-9, n = 100,
                            normalize = FALSE, asp.ratio = 1) {
     if (any(duplicated(data[, c('x', 'y')]))) {
-      warning('stat_delaunay_segment2: dropping duplicated points',
-              call. = FALSE)
+      cli::cli_warn('{.fn {snake_class(self)}} is dropping duplicated points')
     }
     if (normalize) {
       x_range <- range(data$x, na.rm = TRUE, finite = TRUE)
@@ -421,7 +419,7 @@ StatDelaunaySegment2 <- ggproto('StatDelaunaySegment2', Stat,
     }
     vor <- deldir::deldir(data$x, data$y, rw = bound, eps = eps,
                           suppressMsge = TRUE)
-    segments <- rbind(
+    segments <- vec_rbind(
       structure(vor$delsgs[, c(1:2, 5)], names = c('x', 'y', 'group')),
       structure(vor$delsgs[, c(3:4, 6)], names = c('x', 'y', 'group'))
     )
@@ -464,15 +462,14 @@ geom_delaunay_segment2 <- function(mapping = NULL, data = NULL,
 #' @export
 StatDelvorSummary <- ggproto('StatDelvorSummary', Stat,
   setup_params = function(self, data, params) {
-    try_require('deldir', snake_class(self))
+    check_installed('deldir', 'to calculate delaunay triangulation')
     params
   },
-  compute_group = function(data, scales, bound = NULL, eps = 1e-9,
+  compute_group = function(self, data, scales, bound = NULL, eps = 1e-9,
                            switch.centroid = FALSE, normalize = FALSE,
                            asp.ratio = 1) {
     if (any(duplicated(data[, c('x', 'y')]))) {
-      warning('stat_delvor_summary: dropping duplicated points',
-              call. = FALSE)
+      cli::cli_warn('{.fn {snake_class(self)}} is dropping duplicated points')
     }
     if (normalize) {
       x_range <- range(data$x, na.rm = TRUE, finite = TRUE)
@@ -528,17 +525,17 @@ stat_delvor_summary <- function(mapping = NULL, data = NULL, geom = 'point',
 
 # HELPERS -----------------------------------------------------------------
 to_tile <- function(object) {
-  try_require('deldir', 'to_tile')
-  tiles <- rbind(
+  check_installed('deldir', 'to calculate voronoi tesselation')
+  tiles <- vec_rbind(
     structure(object$dirsgs[, c(1:2, 5)], names = c('x', 'y', 'group')),
     structure(object$dirsgs[, c(1:2, 6)], names = c('x', 'y', 'group')),
     structure(object$dirsgs[, c(3:5)], names = c('x', 'y', 'group')),
     structure(object$dirsgs[, c(3:4, 6)], names = c('x', 'y', 'group'))
   )
-  tiles <- unique(tiles)
-  tiles <- rbind(
+  tiles <- unique0(tiles)
+  tiles <- vec_rbind(
     tiles,
-    data.frame(
+    data_frame0(
       x = object$rw[c(1, 2, 2, 1)],
       y = object$rw[c(3, 3, 4, 4)],
       group = deldir::get.cnrind(
@@ -556,7 +553,7 @@ to_tile <- function(object) {
   tiles[order(tiles$group, tiles$theta), ]
 }
 to_triangle <- function(object) {
-  tiles <- rbind(
+  tiles <- vec_rbind(
     structure(object$dirsgs[, c(1:2, 5)], names = c('x', 'y', 'point')),
     structure(object$dirsgs[, c(3:4, 6)], names = c('x', 'y', 'point'))
   )
@@ -572,16 +569,16 @@ to_triangle <- function(object) {
     object$delsgs$ind2 %in% unconform_point
   object$delsgs <- object$delsgs[unconform_seg, , drop = FALSE]
   last_points <- tri_mat(object)
-  last_points <- data.frame(
+  last_points <- data_frame0(
     point = as.vector(last_points),
     group = rep(seq(max(tiles$group) + 1, length.out = ncol(last_points)),
                 each = 3)
   )
-  triangles <- rbind(tiles[, c('point', 'group'), drop = FALSE], last_points)
+  triangles <- vec_rbind(tiles[, c('point', 'group'), drop = FALSE], last_points)
   triangles$x <- object$summary$x[triangles$point]
   triangles$y <- object$summary$y[triangles$point]
   triangles <- triangles[order(triangles$group, triangles$point), ]
-  triangles$group <- match(triangles$group, unique(triangles$group))
+  triangles$group <- match(triangles$group, unique0(triangles$group))
   dup_tri <- which(duplicated(matrix(triangles$point, ncol = 3, byrow = TRUE)))
   triangles <- triangles[!triangles$group %in% dup_tri, , drop = FALSE]
   triangles
@@ -592,7 +589,7 @@ tri_mat <- function(object) {
   tlist <- matrix(integer(0), 3, 0)
   for (i in union(a, b)) {
     jj <- c(b[a == i], a[b == i])
-    jj <- sort(unique(jj))
+    jj <- sort(unique0(jj))
     jj <- jj[jj > i]
     if (length(jj) > 0) {
       for (j in jj) {
@@ -628,10 +625,10 @@ clip_tiles <- function(tiles, radius, bound) {
       final_tile <- polyclip(final_tile, bound, 'intersection')
     }
     if (length(final_tile) == 0) return(NULL)
-    new_data_frame(list(
+    data_frame0(
       x = final_tile[[1]]$x,
       y = final_tile[[1]]$y,
       group = tile$group[1]
-    ))
+    )
   })
 }

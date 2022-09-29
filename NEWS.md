@@ -1,3 +1,33 @@
+# ggforce 0.4.0
+
+* Moved to vctrs internally
+* Updated error messaging to use cli
+* `geom_diagonal()`, `geom_diagonal_wide()`, `geom_parallel_sets()`, and 
+  `geom_sina()` are now bidirectional in the style of ggplot2
+* `geom_mark_*()` now works correctly in the presence of `NA` values in `x` and 
+  `y`
+* The `zoom`, `zoom.x`, and `zoom.y` elements now uses proper registration of
+  theme elements, inheriting from `strip.background`.
+* Fixed bug in `geom_sina()` when groups contained less than 3 points
+* Fixed bug in `geom_parallel_sets()` that erroneously removed grouping 
+  information in some configurations
+* Added `jitter_y` argument to `geom_sina()` to control whether y jittering is 
+  performed on integerish y values.
+* `facet_zoom()` now works with patchwork
+* Fix bug in `geom_mark_ellipse()` that caused wrong orientation of ellipses 
+  with groups of two.
+* `gather_set_data()` now supports tidyselect.
+* `position_jitternormal()` gains a `seed` argument in parallel to 
+  `ggplot2::position_jitter()`
+* `geom_sina()` now works when the group only have a single unique y value
+* `facet_zoom()` now works correctly with transformed scales
+* `facet_wrap_paginate()` now works correctly with `dir = 'v'`
+* `facet_matrix()` now supports a labeller
+* fix a bug in `geom_parallel_sets_axes()` that prevented coloring of axis fill
+* fix a bug in `stat_circle()` if the `x` and `y` aesthetics were inherited from 
+  the global mapping
+* `facet_zoom()` now works even when limits are set by the scales
+
 # ggforce 0.3.4
 
 - Changed documentation to comply with new units package

@@ -17,6 +17,8 @@
 #'
 #' - **x**
 #' - **y**
+#' - x0 *(used to anchor the label)*
+#' - y0 *(used to anchor the label)*
 #' - filter
 #' - label
 #' - description
@@ -91,16 +93,7 @@ NULL
 #' @format NULL
 #' @usage NULL
 #' @export
-GeomMarkHull <- ggproto('GeomMarkHull', GeomShape,
-  setup_data = function(self, data, params) {
-    try_require('concaveman', snake_class(self))
-
-    if (!is.null(data$filter)) {
-      self$removed <- data[!data$filter, c('x', 'y', 'PANEL')]
-      data <- data[data$filter, ]
-    }
-    data
-  },
+GeomMarkHull <- ggproto('GeomMarkHull', GeomMarkCircle,
   draw_panel = function(self, data, panel_params, coord, expand = unit(5, 'mm'),
                         radius = unit(2.5, 'mm'), concavity = 2,
                         label.margin = margin(2, 2, 2, 2, 'mm'),
@@ -115,9 +108,14 @@ GeomMarkHull <- ggproto('GeomMarkHull', GeomShape,
                         con.cap = unit(3, 'mm'), con.arrow = NULL) {
     if (nrow(data) == 0) return(zeroGrob())
 
+    check_installed('concaveman', 'to calculate concave hulls')
+
+    # As long as coord$transform() doesn't recognise x0/y0
+    data$xmin <- data$x0
+    data$ymin <- data$y0
     coords <- coord$transform(data, panel_params)
     if (!is.integer(coords$group)) {
-      coords$group <- match(coords$group, unique(coords$group))
+      coords$group <- match(coords$group, unique0(coords$group))
     }
     coords <- coords[order(coords$group), ]
 
@@ -147,7 +145,7 @@ GeomMarkHull <- ggproto('GeomMarkHull', GeomShape,
       mark.gp = gpar(
         col = first_rows$colour,
         fill = alpha(first_rows$fill, first_rows$alpha),
-        lwd = first_rows$size * .pt,
+        lwd = (first_rows$linewidth %||% first_rows$size) * .pt,
         lty = first_rows$linetype
       ),
       label.gp = gpar(
@@ -172,10 +170,11 @@ GeomMarkHull <- ggproto('GeomMarkHull', GeomShape,
       con.type = con.type,
       con.border = con.border,
       con.cap = con.cap,
-      con.arrow = con.arrow
+      con.arrow = con.arrow,
+      anchor.x = first_rows$xmin,
+      anchor.y = first_rows$ymin
     )
-  },
-  default_aes = GeomMarkCircle$default_aes
+  }
 )
 
 #' @rdname geom_mark_hull
@@ -194,10 +193,7 @@ geom_mark_hull <- function(mapping = NULL, data = NULL, stat = 'identity',
                            con.border = 'one', con.cap = unit(3, 'mm'),
                            con.arrow = NULL, ..., na.rm = FALSE,
                            show.legend = NA, inherit.aes = TRUE) {
-  if (!requireNamespace('concaveman', quietly = TRUE)) {
-    warning('The concaveman package is required for geom_mark_hull', call. = FALSE)
-    return(invisible())
-  }
+  check_installed('concaveman', 'to calculate concave hulls')
   layer(
     data = data,
     mapping = mapping,
@@ -244,7 +240,8 @@ hullEncGrob <- function(x = c(0, 0.5, 1, 0.5), y = c(0.5, 1, 0.5, 0), id = NULL,
                         label.width = NULL, label.minwidth = unit(50, 'mm'),
                         label.hjust = 0, label.buffer = unit(10, 'mm'),
                         con.type = 'elbow', con.border = 'one',
-                        con.cap = unit(3, 'mm'), con.arrow = NULL, vp = NULL) {
+                        con.cap = unit(3, 'mm'), con.arrow = NULL,
+                        anchor.x = NULL, anchor.y = NULL, vp = NULL) {
   mark <- shapeGrob(
     x = x, y = y, id = id, id.lengths = id.lengths,
     expand = expand, radius = radius,
@@ -274,11 +271,18 @@ hullEncGrob <- function(x = c(0, 0.5, 1, 0.5), y = c(0.5, 1, 0.5, 0), id = NULL,
   } else {
     labeldim <- NULL
   }
+  if (!is.null(anchor.x) && !is.unit(anchor.x)) {
+    anchor.x <- unit(anchor.x, default.units)
+  }
+  if (!is.null(anchor.y) && !is.unit(anchor.y)) {
+    anchor.y <- unit(anchor.y, default.units)
+  }
   gTree(
     mark = mark, concavity = concavity, label = label, labeldim = labeldim,
     buffer = label.buffer, ghosts = ghosts, con.gp = con.gp, con.type = con.type,
     con.cap = as_mm(con.cap, default.units), con.border = con.border,
-    con.arrow = con.arrow, name = name, vp = vp, cl = 'hull_enc'
+    con.arrow = con.arrow, anchor.x = anchor.x, anchor.y = anchor.y, name = name,
+    vp = vp, cl = 'hull_enc'
   )
 }
 #' @importFrom grid convertX convertY unit makeContent setChildren gList
@@ -290,35 +294,38 @@ makeContent.hull_enc <- function(x) {
   y_new <- convertY(mark$y, 'mm', TRUE)
   y_new <- split(y_new, mark$id)
   polygons <- Map(function(xx, yy, type) {
-    mat <- unique(cbind(xx, yy))
+    mat <- unique0(cbind(xx, yy))
     if (nrow(mat) <= 2) {
       return(mat)
     }
-    if (length(unique(xx)) == 1) {
+    if (length(unique0(xx)) == 1) {
       return(mat[c(which.min(mat[, 2]), which.max(mat[, 2])), ])
     }
-    if (length(unique((yy[-1] - yy[1]) / (xx[-1] - xx[1]))) == 1) {
+    if (length(unique0((yy[-1] - yy[1]) / (xx[-1] - xx[1]))) == 1) {
       return(mat[c(which.min(mat[, 1]), which.max(mat[, 1])), ])
     }
     concaveman::concaveman(mat, x$concavity, 0)
   }, xx = x_new, yy = y_new)
   mark$id <- rep(seq_along(polygons), vapply(polygons, nrow, numeric(1)))
-  polygons <- do.call(rbind, polygons)
+  polygons <- vec_rbind(!!!polygons)
   mark$x <- unit(polygons[, 1], 'mm')
   mark$y <- unit(polygons[, 2], 'mm')
-  if (inherits(mark, 'shape')) makeContent(mark)
+  if (inherits(mark, 'shape')) mark <- makeContent(mark)
   if (!is.null(x$label)) {
     polygons <- Map(function(x, y) list(x = x, y = y),
       x = split(as.numeric(mark$x), mark$id),
       y = split(as.numeric(mark$y), mark$id)
     )
+    anchor_x <- if (is.null(x$anchor.x)) NULL else convertX(x$anchor.x, 'mm', TRUE)
+    anchor_y <- if (is.null(x$anchor.y)) NULL else convertY(x$anchor.y, 'mm', TRUE)
     labels <- make_label(
       labels = x$label, dims = x$labeldim, polygons = polygons,
       ghosts = x$ghosts, buffer = x$buffer, con_type = x$con.type,
       con_border = x$con.border, con_cap = x$con.cap,
-      con_gp = x$con.gp, anchor_mod = 2, arrow = x$con.arrow
+      con_gp = x$con.gp, anchor_mod = 2, anchor_x = anchor_x,
+      anchor_y = anchor_y, arrow = x$con.arrow
     )
-    setChildren(x, do.call(gList, c(list(mark), labels)))
+    setChildren(x, inject(gList(!!!c(list(mark), labels))))
   } else {
     setChildren(x, gList(mark))
   }

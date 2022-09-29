@@ -20,7 +20,7 @@
 #' geom_parallel_sets understand the following aesthetics
 #' (required aesthetics are in bold):
 #'
-#' - **x**
+#' - **x|y**
 #' - **id**
 #' - **split**
 #' - **value**
@@ -37,6 +37,8 @@
 #' @param angle The angle of the axis label text
 #' @param nudge_x,nudge_y Horizontal and vertical adjustment to nudge labels by.
 #' Useful for offsetting text from the category segments.
+#'
+#' @inheritSection ggplot2::geom_line Orientation
 #'
 #' @name geom_parallel_sets
 #' @rdname geom_parallel_sets
@@ -64,26 +66,30 @@ NULL
 #' @usage NULL
 #' @export
 StatParallelSets <- ggproto('StatParallelSets', Stat,
+  setup_params = function(data, params) {
+    params$flipped_aes <- has_flipped_aes(data, params, main_is_orthogonal = FALSE)
+    params
+  },
   setup_data = function(data, params) {
-    value_check <- lapply(split(data$value, data$id), unique)
+    value_check <- lapply(split(data$value, data$id), unique0)
     if (any(lengths(value_check) != 1)) {
-      stop('value must be kept constant across id', call. = FALSE)
+      cli::cli_abort('{.field value} must be kept constant across {.field id}')
     }
     data$split <- as.factor(data$split)
+    data$flipped_aes <- params$flipped_aes
     data
   },
   compute_panel = function(data, scales, sep = 0.05, strength = 0.5, n = 100,
-                           axis.width = 0) {
+                           axis.width = 0, flipped_aes = FALSE) {
+    data <- flip_data(data, flipped_aes)
     data <- remove_group(data)
     data <- complete_data(data)
-    cols <- c('group', 'colour', 'color', 'fill', 'size', 'alpha', 'linetype')
-    data_groups <- do.call(
-      rbind,
-      lapply(split(data[, names(data) %in% cols, drop = FALSE], data$group),
-             function(d) {
-               as.data.frame(lapply(d, function(x) na.omit(x)[1]),
-                             stringsAsFactors = FALSE)
-             }
+    cols <- c('group', 'colour', 'color', 'fill', 'size', 'linewidth', 'alpha', 'linetype')
+    data_groups <- vec_rbind(
+      !!!lapply(split(data[, names(data) %in% cols, drop = FALSE], data$group),
+        function(d) {
+          data_frame0(!!!lapply(d, function(x) na.omit(x)[1]))
+        }
       )
     )
     # Calculate axis sizes
@@ -92,23 +98,26 @@ StatParallelSets <- ggproto('StatParallelSets', Stat,
     # Calculate diagonals
     diagonals <- sankey_diag_data(data, data_axes, data_groups, axis.width)
 
-    StatDiagonalWide$compute_panel(diagonals, scales, strength, n)
+    diagonals <- flip_data(diagonals, flipped_aes)
+
+    StatDiagonalWide$compute_panel(diagonals, scales, strength, n, flipped_aes)
   },
-  required_aes = c('x', 'id', 'split', 'value'),
-  extra_params = c('na.rm', 'n', 'sep', 'strength', 'axis.width')
+  required_aes = c('x|y', 'id', 'split', 'value'),
+  extra_params = c('na.rm', 'n', 'sep', 'strength', 'axis.width', 'orientation')
 )
 #' @rdname geom_parallel_sets
 #' @export
 stat_parallel_sets <- function(mapping = NULL, data = NULL, geom = 'shape',
                                position = 'identity', n = 100, strength = 0.5,
                                sep = 0.05, axis.width = 0, na.rm = FALSE,
-                               show.legend = NA, inherit.aes = TRUE, ...) {
+                               orientation = NA, show.legend = NA,
+                               inherit.aes = TRUE, ...) {
   layer(
     stat = StatParallelSets, data = data, mapping = mapping, geom = geom,
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
     params = list(
-      na.rm = na.rm, n = n, strength = strength, sep = sep,
-      axis.width = axis.width, ...
+      na.rm = na.rm, orientation = orientation, n = n, strength = strength,
+      sep = sep, axis.width = axis.width, ...
     )
   )
 }
@@ -116,15 +125,15 @@ stat_parallel_sets <- function(mapping = NULL, data = NULL, geom = 'shape',
 #' @export
 geom_parallel_sets <- function(mapping = NULL, data = NULL,
                                stat = 'parallel_sets', position = 'identity',
-                               n = 100, na.rm = FALSE, sep = 0.05,
-                               strength = 0.5, axis.width = 0, show.legend = NA,
-                               inherit.aes = TRUE, ...) {
+                               n = 100, na.rm = FALSE, orientation = NA,
+                               sep = 0.05, strength = 0.5, axis.width = 0,
+                               show.legend = NA, inherit.aes = TRUE, ...) {
   layer(
     data = data, mapping = mapping, stat = stat, geom = GeomShape,
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
     params = list(
-      na.rm = na.rm, n = n, strength = strength, sep = sep,
-      axis.width = axis.width, ...
+      na.rm = na.rm, orientation = orientation, n = n, strength = strength,
+      sep = sep, axis.width = axis.width, ...
     )
   )
 }
@@ -133,27 +142,33 @@ geom_parallel_sets <- function(mapping = NULL, data = NULL,
 #' @usage NULL
 #' @export
 StatParallelSetsAxes <- ggproto('StatParallelSetsAxes', Stat,
+  setup_params = function(data, params) {
+    params$flipped_aes <- has_flipped_aes(data, params, main_is_orthogonal = FALSE)
+    params
+  },
   setup_data = function(data, params) {
-    value_check <- lapply(split(data$value, data$id), unique)
+    value_check <- lapply(split(data$value, data$id), unique0)
     if (any(lengths(value_check) != 1)) {
-      stop('value must be kept constant across id', call. = FALSE)
+      cli::cli_abort('{.field value} must be kept constant across {.field id}')
     }
     data$split <- as.factor(data$split)
+    data$flipped_aes <- params$flipped_aes
     data
   },
-  compute_panel = function(data, scales, sep = 0.05, axis.width = 0) {
+  compute_panel = function(data, scales, sep = 0.05, axis.width = 0, flipped_aes = FALSE) {
+    data <- flip_data(data, flipped_aes)
     split_levels <- levels(data$split)
     data <- remove_group(data)
-    data <- complete_data(data)
+    data <- complete_data(data, FALSE)
     # Calculate axis sizes
     data_axes <- sankey_axis_data(data, sep)
     data_axes <- data_axes[data_axes$split != '.ggforce_missing', ]
-    cols <- c('x', 'split', 'colour', 'color', 'fill', 'size', 'alpha',
-              'linetype')
+    cols <- c('x', 'split', 'colour', 'color', 'fill', 'size', 'linewidth',
+              'alpha', 'linetype')
     aes <- data[, names(data) %in% cols]
-    aes <- unique(aes)
+    aes <- unique0(aes)
     if (nrow(aes) != nrow(data_axes)) {
-      stop('Axis aesthetics must be constant in each split', call. = FALSE)
+      cli::cli_abort('Axis aesthetics must be constant in each split')
     }
     data_axes$split <- factor(as.character(data_axes$split),
                               levels = split_levels)
@@ -164,10 +179,10 @@ StatParallelSetsAxes <- ggproto('StatParallelSetsAxes', Stat,
     data$y <- data$ymin + data$value / 2
     data$xmin <- data$x - axis.width / 2
     data$xmax <- data$x + axis.width / 2
-    data
+    flip_data(data, flipped_aes)
   },
-  required_aes = c('x', 'id', 'split', 'value'),
-  extra_params = c('na.rm', 'sep')
+  required_aes = c('x|y', 'id', 'split', 'value'),
+  extra_params = c('na.rm', 'sep', 'orientation')
 )
 #' @rdname geom_parallel_sets
 #' @export
@@ -175,11 +190,13 @@ stat_parallel_sets_axes <- function(mapping = NULL, data = NULL,
                                     geom = 'parallel_sets_axes',
                                     position = 'identity', sep = 0.05,
                                     axis.width = 0, na.rm = FALSE,
-                                    show.legend = NA, inherit.aes = TRUE, ...) {
+                                    orientation = NA, show.legend = NA,
+                                    inherit.aes = TRUE, ...) {
   layer(
     stat = StatParallelSetsAxes, data = data, mapping = mapping, geom = geom,
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
-    params = list(na.rm = na.rm, sep = sep, axis.width = axis.width, ...)
+    params = list(na.rm = na.rm, orientation = orientation, sep = sep,
+                  axis.width = axis.width, ...)
   )
 }
 #' @rdname ggforce-extensions
@@ -188,6 +205,8 @@ stat_parallel_sets_axes <- function(mapping = NULL, data = NULL,
 #' @export
 GeomParallelSetsAxes <- ggproto('GeomParallelSetsAxes', GeomShape,
   setup_data = function(data, params) {
+    flipped_aes <- has_flipped_aes(data, params)
+    data <- flip_data(data, flipped_aes)
     data$group <- seq_len(nrow(data))
     lb <- data
     lb$x <- lb$xmin
@@ -201,8 +220,8 @@ GeomParallelSetsAxes <- ggproto('GeomParallelSetsAxes', GeomShape,
     rt <- data
     rt$x <- rt$xmax
     rt$y <- rt$ymax
-    data <- rbind(lb, rb, rt, lt)
-    data[order(data$group), ]
+    data <- vec_rbind(lb, rb, rt, lt)
+    flip_data(data[order(data$group), ], flipped_aes)
   },
   required_aes = c('xmin', 'ymin', 'xmax', 'ymax')
 )
@@ -211,31 +230,36 @@ GeomParallelSetsAxes <- ggproto('GeomParallelSetsAxes', GeomShape,
 geom_parallel_sets_axes <- function(mapping = NULL, data = NULL,
                                     stat = 'parallel_sets_axes',
                                     position = 'identity', na.rm = FALSE,
-                                    show.legend = NA, inherit.aes = TRUE,
-                                    ...) {
+                                    orientation = NA, show.legend = NA,
+                                    inherit.aes = TRUE, ...) {
   layer(
     data = data, mapping = mapping, stat = stat, geom = GeomParallelSetsAxes,
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
-    params = list(na.rm = na.rm, ...)
+    params = list(na.rm = na.rm, orientation = orientation, ...)
   )
 }
 #' @rdname geom_parallel_sets
 #' @export
 geom_parallel_sets_labels <- function(mapping = NULL, data = NULL,
                                       stat = 'parallel_sets_axes', angle = -90,
-				      nudge_x = 0, nudge_y = 0,
+				                              nudge_x = 0, nudge_y = 0,
                                       position = 'identity', na.rm = FALSE,
-                                      show.legend = NA, inherit.aes = TRUE,
-                                      ...) {
+				                              orientation = NA, show.legend = NA,
+				                              inherit.aes = TRUE, ...) {
   if (!missing(nudge_x) || !missing(nudge_y)) {
-    if (!missing(position)) stop("You must specify either `position` or `nudge_x`/`nudge_y`.", call. = FALSE)
+    if (!missing(position)) {
+      cli::cli_abort(c(
+        "both {.arg position} and {.arg nudge_x}/{.arg nudge_y} are supplied",
+        "i" = "Only use one approach to alter the position"
+      ))
+    }
     position <- position_nudge(nudge_x, nudge_y)
   }
 
   layer(
     data = data, mapping = mapping, stat = stat, geom = GeomText,
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
-    params = list(na.rm = na.rm, angle = angle, ...)
+    params = list(na.rm = na.rm, orientation = orientation, angle = angle, ...)
   )
 }
 #' Tidy data for use with geom_parallel_sets
@@ -256,21 +280,21 @@ geom_parallel_sets_labels <- function(mapping = NULL, data = NULL,
 #' data <- reshape2::melt(Titanic)
 #' head(gather_set_data(data, 1:4))
 gather_set_data <- function(data, x, id_name = 'id') {
-  if (is.numeric(x)) x <- names(data)[x]
+  columns <- tidyselect::eval_select(enquo(x), data)
   data[[id_name]] <- seq_len(nrow(data))
-  do.call(rbind, lapply(x, function(n) {
+  vec_rbind(!!!lapply(columns, function(n) {
     data$x <- n
     data$y <- data[[n]]
     data
   }))
 }
 #' @importFrom stats na.omit
-complete_data <- function(data) {
+complete_data <- function(data, check_id = TRUE) {
   levels(data$split) <- c(levels(data$split), '.ggforce_missing')
-  all_obs <- unique(data[, c('id', 'value')])
-  data <- do.call(rbind, lapply(split(data, data$x), function(d) {
+  all_obs <- unique0(data[, c('id', 'value')])
+  data <- vec_rbind(!!!lapply(split(data, data$x), function(d) {
     if (anyDuplicated(d$id) != 0) {
-      stop('id must be unique within axes', call. = FALSE)
+      cli::cli_abort('{.field id} must be unique within axes')
     }
     x <- d$x[1]
     if (length(d$id) != nrow(all_obs)) {
@@ -279,31 +303,33 @@ complete_data <- function(data) {
       fill$x <- x
       fill[, c('id', 'value')] <- all_obs[!d$id %in% all_obs$id, ]
       fill$split <- '.ggforce_missing'
-      d <- rbind(d, fill)
+      d <- vec_rbind(d, fill)
     }
     d
   }))
 
-  # Ensure id grouping
-  id_groups <- lapply(split(data$group, data$id),
-                      function(x) unique(na.omit(x)))
-  if (any(lengths(id_groups) != 1)) {
-    stop('id must keep grouping across data', call. = FALSE)
+  if (check_id) {
+    # Ensure id grouping
+    id_groups <- lapply(split(data$group, data$id),
+                        function(x) unique0(na.omit(x)))
+    if (any(lengths(id_groups) != 1)) {
+      cli::cli_abort('{.field id} must keep grouping across data')
+    }
+    id_match <- match(as.character(data$id), names(id_groups))
+    data$group <- unlist(id_groups)[id_match]
   }
-  id_match <- match(as.character(data$id), names(id_groups))
-  data$group <- unlist(id_groups)[id_match]
+
   data[order(data$x, data$id), ]
 }
 
 sankey_axis_data <- function(data, sep) {
-  do.call(rbind, lapply(split(data, data$x), function(d) {
+  vec_rbind(!!!lapply(split(data, data$x), function(d) {
     splits <- split(d$value, as.character(d$split))
     splits <- splits[rev(order(match(names(splits), levels(d$split))))]
-    d <- data.frame(
-      split = names(splits),
+    d <- data_frame0(
+      split = factor(names(splits)),
       value = sapply(splits, sum),
-      x = d$x[1],
-      stringsAsFactors = TRUE
+      x = d$x[1]
     )
     sep <- sum(d$value) * sep
     d$ymax <- (seq_len(nrow(d)) - 1) * sep + cumsum(d$value)
@@ -313,7 +339,7 @@ sankey_axis_data <- function(data, sep) {
 }
 
 sankey_diag_data <- function(data, axes_data, groups, axis.width) {
-  axes <- sort(unique(data$x))
+  axes <- sort(unique0(data$x))
   diagonals <- lapply(seq_len(length(axes) - 1), function(i) {
     from <- data[data$x == axes[i], , drop = FALSE]
     to <- data[data$x == axes[i + 1], , drop = FALSE]
@@ -323,12 +349,11 @@ sankey_diag_data <- function(data, axes_data, groups, axis.width) {
     )
     diagonals <- diagonals[lengths(diagonals) != 0]
     diag_rep <- sapply(diagonals, `[`, 1)
-    diag_from <- data.frame(
+    diag_from <- data_frame0(
       group = from$group[diag_rep],
       split = from$split[diag_rep],
       value = sapply(diagonals, function(ii) sum(from$value[ii])),
-      x = from$x[1] + axis.width / 2,
-      stringsAsFactors = FALSE
+      x = from$x[1] + axis.width / 2
     )
     diag_to <- diag_from
     diag_to$split <- to$split[diag_rep]
@@ -336,7 +361,7 @@ sankey_diag_data <- function(data, axes_data, groups, axis.width) {
 
     diag_from <- add_y_pos(diag_from, axes_data[axes_data$x == axes[i], ])
     diag_to <- add_y_pos(diag_to, axes_data[axes_data$x == axes[i + 1], ])
-    diagonals <- rbind(diag_from, diag_to)
+    diagonals <- vec_rbind(diag_from, diag_to)
     main_groups <- diagonals$group
     diagonals$group <- rep(seq_len(nrow(diag_from) / 2), 4)
     if (length(setdiff(names(groups), 'group')) > 0) {
@@ -349,7 +374,7 @@ sankey_diag_data <- function(data, axes_data, groups, axis.width) {
   })
   n_groups <- sapply(diagonals, nrow) / 4
   group_offset <- c(0, cumsum(n_groups)[-length(n_groups)])
-  do.call(rbind, Map(function(d, i) {
+  vec_rbind(!!!Map(function(d, i) {
     d$group <- d$group + i
     d
   }, d = diagonals, i = group_offset))
@@ -368,14 +393,12 @@ add_y_pos <- function(data, axes_data) {
   data$y[unlist(splits)] <- unlist(ymin)
   data_tmp <- data
   data_tmp$y <- data$y + data$value
-  rbind(data_tmp, data)
+  vec_rbind(data_tmp, data)
 }
 
 remove_group <- function(data) {
-  split_groups <- lapply(split(data$group, data$split), unique)
-  if (all(lengths(split_groups) == 1)) {
-    data$group <- -1
-  } else if (length(Reduce(intersect, split_groups)) == 0) {
+  split_groups <- lapply(split(data$group, data$split), unique0)
+  if (length(Reduce(intersect, split_groups)) == 0) {
     disc <- vapply(data, is.discrete, logical(1))
     disc[names(disc) %in% c('split', 'label', 'PANEL')] <- FALSE
     if (any(disc)) {

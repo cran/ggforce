@@ -14,7 +14,7 @@
 #'  - **y**
 #'  - color
 #'  - fill
-#'  - size
+#'  - linewidth
 #'  - linetype
 #'  - alpha
 #'
@@ -94,16 +94,16 @@ GeomBsplineClosed0 <- ggproto('GeomBspline0', GeomPolygon,
   draw_panel = function(data, panel_scales, coord, na.rm = FALSE) {
     coords <- coord$transform(data, panel_scales)
     if (!is.integer(coords$group)) {
-      coords$group <- match(coords$group, unique(coords$group))
+      coords$group <- match(coords$group, unique0(coords$group))
     }
-    startPoint <- match(unique(coords$group), coords$group)
+    startPoint <- match(unique0(coords$group), coords$group)
     xsplineGrob(coords$x, coords$y,
       id = coords$group, default.units = 'native',
       shape = 1, open = FALSE,
       gp = gpar(
         col = coords$colour[startPoint],
         fill = alpha(coords$fill[startPoint], coords$alpha[startPoint]),
-        lwd = coords$size[startPoint] * .pt,
+        lwd = (coords$linewidth[startPoint] %||% coords$size[startPoint]) * .pt,
         lty = coords$linetype[startPoint]
       )
     )

@@ -20,7 +20,7 @@
 #' - m2
 #' - color
 #' - fill
-#' - size
+#' - linewidth
 #' - linetype
 #' - alpha
 #' - lineend
@@ -63,12 +63,12 @@ NULL
 #' @export
 StatEllip <- ggproto('StatEllip', Stat,
   setup_data = function(data, params) {
-    data$m1 <- ifelse(is.null(data$m1), 2, data$m1)
-    data$m2 <- ifelse(is.null(data$m2), data$m1, data$m2)
+    data$m1 <- if (is.null(data$m1)) 2 else data$m1
+    data$m2 <- if (is.null(data$m2)) data$m1 else data$m2
     data
   },
   compute_panel = function(self, data, scales, n = 360) {
-    if (is.null(data)) return(data)
+    if (empty_data(data)) return(data)
     data$group <- make_unique(as.character(data$group))
     n_ellipses <- nrow(data)
     data <- data[rep(seq_len(n_ellipses), each = n), ]

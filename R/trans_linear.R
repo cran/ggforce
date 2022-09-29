@@ -24,15 +24,15 @@
 #' ggplot(square, aes(x, y, group = group)) +
 #'   geom_polygon(aes(fill = factor(group)), colour = 'black')
 linear_trans <- function(...) {
-  calls <- as.list(substitute(list(...)))[-1]
+  calls <- as.list(substitute(list2(...)))[-1]
   transformations <- sapply(calls, deparse)
   args <- unlist(lapply(calls, function(call) {
     args <- as.list(call)[-1]
     as.character(args[sapply(args, 'class') == 'name'])
   }))
-  args <- unique(args)
+  args <- unique0(args)
   if (any(c('x', 'y') %in% args)) {
-    stop('x and y are preserved argument names', call. = FALSE)
+    cli::cli_abort('{.arg x} and {.arg y} are preserved argument names')
   }
   args <- c('x', 'y', args)
   trans_fun <- function() {
@@ -40,7 +40,7 @@ linear_trans <- function(...) {
     trans_mat <- Reduce(function(l, r) r %*% l,
                         lapply(calls, eval, envir = env))
     trans <- trans_mat %*% rbind(x, y, z = 1)
-    data.frame(x = trans[1, ], y = trans[2, ])
+    data_frame0(x = trans[1, ], y = trans[2, ])
   }
   formals(trans_fun) <- structure(rep(list(quote(expr = )), length(args)),
                                   names = args)
@@ -50,7 +50,7 @@ linear_trans <- function(...) {
                         lapply(calls, eval, envir = env))
     trans_mat <- solve(trans_mat)
     trans <- trans_mat %*% rbind(x, y, z = 1)
-    data.frame(x = trans[1, ], y = trans[2, ])
+    data_frame0(x = trans[1, ], y = trans[2, ])
   }
   formals(inv_fun) <- structure(rep(list(quote(expr = )), length(args)),
                                 names = args)

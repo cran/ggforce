@@ -35,6 +35,8 @@
 #'
 #' - **x**
 #' - **y**
+#' - x0 *(used to anchor the label)*
+#' - y0 *(used to anchor the label)*
 #' - filter
 #' - label
 #' - description
@@ -157,9 +159,12 @@ GeomMarkCircle <- ggproto('GeomMarkCircle', GeomShape,
                         con.cap = unit(3, 'mm'), con.arrow = NULL) {
     if (nrow(data) == 0) return(zeroGrob())
 
+    # As long as coord$transform() doesn't recognise x0/y0
+    data$xmin <- data$x0
+    data$ymin <- data$y0
     coords <- coord$transform(data, panel_params)
     if (!is.integer(coords$group)) {
-      coords$group <- match(coords$group, unique(coords$group))
+      coords$group <- match(coords$group, unique0(coords$group))
     }
     coords <- coords[order(coords$group), ]
 
@@ -188,7 +193,7 @@ GeomMarkCircle <- ggproto('GeomMarkCircle', GeomShape,
       mark.gp = gpar(
         col = first_rows$colour,
         fill = alpha(first_rows$fill, first_rows$alpha),
-        lwd = first_rows$size * .pt,
+        lwd = (first_rows$linewidth %||% first_rows$size) * .pt,
         lty = first_rows$linetype
       ),
       label.gp = gpar(
@@ -213,12 +218,23 @@ GeomMarkCircle <- ggproto('GeomMarkCircle', GeomShape,
       con.type = con.type,
       con.border = con.border,
       con.cap = con.cap,
-      con.arrow = con.arrow
+      con.arrow = con.arrow,
+      anchor.x = first_rows$xmin,
+      anchor.y = first_rows$ymin
     )
   },
-  default_aes = aes(fill = NA, colour = 'black', alpha = 0.3, size = 0.5,
-                    linetype = 1, filter = NULL, label = NULL,
-                    description = NULL)
+  default_aes = combine_aes(
+    GeomShape$default_aes,
+    aes(fill = NA, colour = 'black', alpha = 0.3, filter = NULL, label = NULL,
+        description = NULL, x0 = NULL, y0 = NULL)
+  ),
+  handle_na = function(self, data, params) {
+    remove_missing(data, params$na.rm,
+                   c(self$required_aes, self$non_missing_aes),
+                   snake_class(self)
+    )
+  },
+  extra_params = 'na.rm'
 )
 
 #' @rdname geom_mark_circle
@@ -285,24 +301,25 @@ circEncGrob <- function(x = c(0, 0.5, 1, 0.5), y = c(0.5, 1, 0.5, 0), id = NULL,
                         label.width = NULL, label.minwidth = unit(50, 'mm'),
                         label.hjust = 0, label.buffer = unit(10, 'mm'),
                         con.type = 'elbow', con.border = 'one',
-                        con.cap = unit(3, 'mm'), con.arrow = NULL, vp = NULL) {
+                        con.cap = unit(3, 'mm'), con.arrow = NULL,
+                        anchor.x = NULL, anchor.y = NULL, vp = NULL) {
   if (is.null(id)) {
     if (is.null(id.lengths)) {
       id <- rep(1, length(x))
     } else {
       id <- rep(seq_along(id.lengths), id.lengths)
       if (length(id) != length(x)) {
-        stop('id.lengths must sum up to the number of points', call. = FALSE)
+        cli::cli_abort('{.arg id.lengths} must sum up to the number of points')
       }
     }
   }
   include <- unlist(lapply(split(seq_along(x), id), function(i) {
     xi <- x[i]
     yi <- y[i]
-    if (length(unique(xi)) == 1) {
+    if (length(unique0(xi)) == 1) {
       return(i[c(which.min(yi), which.max(yi))])
     }
-    if (length(unique(yi)) == 1) {
+    if (length(unique0(yi)) == 1) {
       return(i[c(which.min(xi), which.max(xi))])
     }
     i[chull(xi, yi)]
@@ -336,11 +353,18 @@ circEncGrob <- function(x = c(0, 0.5, 1, 0.5), y = c(0.5, 1, 0.5, 0), id = NULL,
   } else {
     labeldim <- NULL
   }
+  if (!is.null(anchor.x) && !is.unit(anchor.x)) {
+    anchor.x <- unit(anchor.x, default.units)
+  }
+  if (!is.null(anchor.y) && !is.unit(anchor.y)) {
+    anchor.y <- unit(anchor.y, default.units)
+  }
   gTree(
     mark = mark, n = n, label = label, labeldim = labeldim,
     buffer = label.buffer, ghosts = ghosts, con.gp = con.gp, con.type = con.type,
     con.cap = as_mm(con.cap, default.units), con.border = con.border,
-    con.arrow = con.arrow, name = name, vp = vp, cl = 'circ_enc'
+    con.arrow = con.arrow, anchor.x = anchor.x, anchor.y = anchor.y,
+    name = name, vp = vp, cl = 'circ_enc'
   )
 }
 #' @importFrom grid convertX convertY unit makeContent setChildren gList
@@ -355,23 +379,26 @@ makeContent.circ_enc <- function(x) {
   points <- 2 * pi * (seq_len(x$n) - 1) / x$n
   circles$x <- circles$x0 + cos(points) * circles$r
   circles$y <- circles$y0 + sin(points) * circles$r
-  circles <- unique(circles)
+  circles <- unique0(circles)
   mark$x <- unit(circles$x, 'mm')
   mark$y <- unit(circles$y, 'mm')
   mark$id <- circles$id
-  if (inherits(mark, 'shape')) makeContent(mark)
+  if (inherits(mark, 'shape')) mark <- makeContent(mark)
   if (!is.null(x$label)) {
     polygons <- Map(function(x, y) list(x = x, y = y),
       x = split(as.numeric(mark$x), mark$id),
       y = split(as.numeric(mark$y), mark$id)
     )
+    anchor_x <- if (is.null(x$anchor.x)) NULL else convertX(x$anchor.x, 'mm', TRUE)
+    anchor_y <- if (is.null(x$anchor.y)) NULL else convertY(x$anchor.y, 'mm', TRUE)
     labels <- make_label(
       labels = x$label, dims = x$labeldim, polygons = polygons,
       ghosts = x$ghosts, buffer = x$buffer, con_type = x$con.type,
       con_border = x$con.border, con_cap = x$con.cap,
-      con_gp = x$con.gp, anchor_mod = 2, arrow = x$con.arrow
+      con_gp = x$con.gp, anchor_mod = 2, anchor_x = anchor_x,
+      anchor_y = anchor_y, arrow = x$con.arrow
     )
-    setChildren(x, do.call(gList, c(list(mark), labels)))
+    setChildren(x, inject(gList(!!!c(list(mark), labels))))
   } else {
     setChildren(x, gList(mark))
   }

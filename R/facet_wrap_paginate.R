@@ -18,6 +18,7 @@
 #' faceted plot
 #'
 #' @export
+#' @importFrom utils packageVersion
 #'
 #' @examples
 #' ggplot(diamonds) +
@@ -27,8 +28,20 @@
 facet_wrap_paginate <- function(facets, nrow = NULL, ncol = NULL,
                                 scales = 'fixed', shrink = TRUE,
                                 labeller = 'label_value', as.table = TRUE,
-                                switch = NULL, drop = TRUE, dir = 'h',
+                                switch = deprecated(), drop = TRUE, dir = 'h',
                                 strip.position = 'top', page = 1) {
+  # Work around non-lifecycle deprecation
+  if (!lifecycle::is_present(switch) && packageVersion('ggplot2') <= '3.3.6') {
+    switch <- NULL
+  }
+  real_dir <- 'h'
+  if (identical(dir, 'v')) {
+    tmp <- ncol
+    ncol <- nrow
+    nrow <- tmp
+    real_dir <- 'v'
+    dir <- 'h'
+  }
   facet <- facet_wrap(facets,
     nrow = nrow, ncol = ncol, scales = scales,
     shrink = shrink, labeller = labeller, as.table = as.table,
@@ -40,7 +53,7 @@ facet_wrap_paginate <- function(facets, nrow = NULL, ncol = NULL,
   } else {
     ggproto(NULL, FacetWrapPaginate,
       shrink = shrink,
-      params = c(facet$params, list(page = page))
+      params = c(facet$params, list(page = page, real_dir = real_dir))
     )
   }
 }
@@ -52,10 +65,11 @@ facet_wrap_paginate <- function(facets, nrow = NULL, ncol = NULL,
 #' @export
 FacetWrapPaginate <- ggproto('FacetWrapPaginate', FacetWrap,
   setup_params = function(data, params) {
-    modifyList(
+    modify_list(
       params,
       list(
         max_rows = params$nrow,
+        max_cols = params$ncol,
         nrow = NULL
       )
     )
@@ -72,23 +86,27 @@ FacetWrapPaginate <- ggproto('FacetWrapPaginate', FacetWrap,
     ranges <- ranges[include]
     layout <- layout[include, , drop = FALSE]
     layout$ROW <- layout$ROW - min(layout$ROW) + 1
-    x_scale_ind <- unique(layout$SCALE_X)
+    x_scale_ind <- unique0(layout$SCALE_X)
     x_scales <- x_scales[x_scale_ind]
     layout$SCALE_X <- match(layout$SCALE_X, x_scale_ind)
-    y_scale_ind <- unique(layout$SCALE_Y)
+    y_scale_ind <- unique0(layout$SCALE_Y)
     y_scales <- y_scales[y_scale_ind]
     layout$SCALE_Y <- match(layout$SCALE_Y, y_scale_ind)
+    if (identical(params$real_dir, "v")) {
+      layout[c("ROW", "COL")] <- layout[c("COL", "ROW")]
+      params[c('max_cols', 'max_rows')] <- params[c('max_rows', 'max_cols')]
+    }
     table <- FacetWrap$draw_panels(panels, layout, x_scales, y_scales, ranges,
                                    coord, data, theme, params)
     if (max(layout$ROW) != params$max_rows) {
       spacing <- theme$panel.spacing.y %||% theme$panel.spacing
       missing_rows <- params$max_rows - max(layout$ROW)
-      strip_rows <- unique(table$layout$t[grepl('strip', table$layout$name) & table$layout$l %in% panel_cols(table)$l])
+      strip_rows <- unique0(table$layout$t[grepl('strip', table$layout$name) & table$layout$l %in% panel_cols(table)$l])
       if (length(strip_rows) != 0)
           strip_rows <- strip_rows[as.numeric(table$heights[strip_rows]) != 0]
-      axis_b_rows <- unique(table$layout$t[grepl('axis-b', table$layout$name)])
+      axis_b_rows <- unique0(table$layout$t[grepl('axis-b', table$layout$name)])
       axis_b_rows <- axis_b_rows[as.numeric(table$heights[axis_b_rows]) != 0]
-      axis_t_rows <- unique(table$layout$t[grepl('axis-t', table$layout$name)])
+      axis_t_rows <- unique0(table$layout$t[grepl('axis-t', table$layout$name)])
       axis_t_rows <- axis_t_rows[as.numeric(table$heights[axis_t_rows]) != 0]
       table <- gtable_add_rows(table, unit(missing_rows, 'null'))
       table <- gtable_add_rows(table, spacing * missing_rows)
@@ -104,15 +122,15 @@ FacetWrapPaginate <- ggproto('FacetWrapPaginate', FacetWrap,
         }
       }
     }
-    if (max(layout$COL) != params$ncol) {
+    if (max(layout$COL) != params$max_cols) {
       spacing <- theme$panel.spacing.x %||% theme$panel.spacing
-      missing_cols <- params$ncol - max(layout$COL)
-      strip_cols <- unique(table$layout$t[grepl('strip', table$layout$name) & table$layout$t %in% panel_rows(table)$t])
-      if (length(strip_cols) != 0) 
+      missing_cols <- params$max_cols - max(layout$COL)
+      strip_cols <- unique0(table$layout$t[grepl('strip', table$layout$name) & table$layout$t %in% panel_rows(table)$t])
+      if (length(strip_cols) != 0)
           strip_cols <- strip_cols[as.numeric(table$widths[strip_cols]) != 0]
-      axis_l_cols <- unique(table$layout$l[grepl('axis-l', table$layout$name)])
+      axis_l_cols <- unique0(table$layout$l[grepl('axis-l', table$layout$name)])
       axis_l_cols <- axis_l_cols[as.numeric(table$widths[axis_l_cols]) != 0]
-      axis_r_cols <- unique(table$layout$l[grepl('axis-r', table$layout$name)])
+      axis_r_cols <- unique0(table$layout$l[grepl('axis-r', table$layout$name)])
       axis_r_cols <- axis_r_cols[as.numeric(table$widths[axis_r_cols]) != 0]
       table <- gtable_add_cols(table, unit(missing_cols, 'null'))
       table <- gtable_add_cols(table, spacing * missing_cols)

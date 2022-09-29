@@ -32,7 +32,7 @@
 #' - size
 #' - alpha
 #'
-#' @inheritParams ggplot2::geom_path
+#' @inheritParams ggplot2::geom_line
 #' @inheritParams ggplot2::stat_identity
 #' @inheritParams ggplot2::stat_density
 #'
@@ -65,6 +65,12 @@
 #' @param bins Number of bins. Overridden by binwidth. Defaults to 50.
 #'
 #' @param seed A seed to set for the jitter to ensure a reproducible plot
+#'
+#' @param jitter_y If y is integerish banding can occur and the default is to
+#'   jitter the values slightly to make them better distributed. Setting
+#'   `jitter_y = FALSE` turns off this behaviour
+#'
+#' @inheritSection ggplot2::geom_line Orientation
 #'
 #' @author Nikos Sidiropoulos, Claus Wilke, and Thomas Lin Pedersen
 #'
@@ -161,16 +167,22 @@ StatSina <- ggproto('StatSina', Stat,
   required_aes = c('x', 'y'),
 
   setup_data = function(data, params) {
+    data <- flip_data(data, params$flipped_aes)
+    data$flipped_aes <- params$flipped_aes
     if (is.double(data$x) && !.has_groups(data) && any(data$x != data$x[1L])) {
-      stop('Continuous x aesthetic -- did you forget aes(group=...)?',
-        call. = FALSE
-      )
+      cli::cli_abort(c(
+        "Continuous {.field {flipped_names(params$flipped_aes)$x}} aesthetic",
+        "i" = "did you forget {.code aes(group = ...)}?"
+      ))
     }
 
-    data
+    flip_data(data, params$flipped_aes)
   },
 
   setup_params = function(data, params) {
+    params$flipped_aes <- has_flipped_aes(data, params, main_is_orthogonal = TRUE, group_has_equal = TRUE)
+
+    data <- flip_data(data, params$flipped_aes)
     params$maxwidth <- params$maxwidth %||% (resolution(data$x %||% 0) * 0.9)
 
     if (is.null(params$binwidth) && is.null(params$bins)) {
@@ -183,18 +195,19 @@ StatSina <- ggproto('StatSina', Stat,
   compute_panel = function(self, data, scales, scale = TRUE, method = 'density',
                            bw = 'nrd0', kernel = 'gaussian', binwidth = NULL,
                            bins = NULL, maxwidth = 1, adjust = 1, bin_limit = 1,
-                           seed = NA) {
-
+                           seed = NA, flipped_aes = FALSE, jitter_y = TRUE) {
     if (!is.null(binwidth)) {
-      bins <- bin_breaks_width(scales$y$dimension() + 1e-8, binwidth)
+      bins <- bin_breaks_width(scales[[flipped_names(flipped_aes)$y]]$dimension() + 1e-8, binwidth)
     } else {
-      bins <- bin_breaks_bins(scales$y$dimension() + 1e-8, bins)
+      bins <- bin_breaks_bins(scales[[flipped_names(flipped_aes)$y]]$dimension() + 1e-8, bins)
     }
 
     data <- ggproto_parent(Stat, self)$compute_panel(data, scales,
       scale = scale, method = method, bw = bw, kernel = kernel,
       bins = bins$breaks, maxwidth = maxwidth, adjust = adjust,
-      bin_limit = bin_limit)
+      bin_limit = bin_limit, flipped_aes = flipped_aes)
+
+    data <- flip_data(data, flipped_aes)
 
     if (is.logical(scale)) {
       scale <- if (scale) 'area' else 'width'
@@ -211,6 +224,7 @@ StatSina <- ggproto('StatSina', Stat,
       # width: constant width (each density scaled to a maximum of 1)
       width = data$scaled
     )
+    data$sinawidth[!is.finite(data$sinawidth)] <- 0
 
     if (!is.na(seed)) {
       new_seed <- sample(.Machine$integer.max, 1L)
@@ -224,21 +238,26 @@ StatSina <- ggproto('StatSina', Stat,
     data$width <- maxwidth
 
     # jitter y values if the input is input is integer
-    if (all(data$y == floor(data$y))) {
+    if (jitter_y && is_integerish(data$y)) {
       data$y <- jitter(data$y)
     }
 
-    data
+    flip_data(data, flipped_aes)
   },
 
   compute_group = function(data, scales, scale = TRUE, method = 'density',
                            bw = 'nrd0', kernel = 'gaussian',
                            maxwidth = 1, adjust = 1, bin_limit = 1,
-                           bins = NULL) {
+                           bins = NULL, flipped_aes = FALSE) {
     if (nrow(data) == 0) return(NULL)
+
+    data <- flip_data(data, flipped_aes)
 
     if (nrow(data) < 3) {
       data$density <- 0
+      data$scaled <- 1
+    } else if (length(unique0(data$y)) < 2) {
+      data$density <- 1
       data$scaled <- 1
     } else if (method == 'density') { # density kernel estimation
       range <- range(data$y, na.rm = TRUE)
@@ -249,8 +268,6 @@ StatSina <- ggproto('StatSina', Stat,
 
       data$density <- densf(data$y)
       data$scaled <- data$density / max(dens$density)
-
-      data
     } else { # bin based estimation
       bin_index <- cut(data$y, bins, include.lowest = TRUE, labels = FALSE)
       data$density <- tapply(bin_index, bin_index, length)[as.character(bin_index)]
@@ -259,7 +276,7 @@ StatSina <- ggproto('StatSina', Stat,
     }
 
     # Compute width if x has multiple values
-    if (length(unique(data$x)) > 1) {
+    if (length(unique0(data$x)) > 1) {
       width <- diff(range(data$x)) * maxwidth
     } else {
       width <- maxwidth
@@ -267,15 +284,16 @@ StatSina <- ggproto('StatSina', Stat,
     data$width <- width
     data$n <- nrow(data)
     data$x <- mean(range(data$x))
-    data
+    flip_data(data, flipped_aes)
   },
   finish_layer = function(data, params) {
     # rescale x in case positions have been adjusted
+    data <- flip_data(data, params$flipped_aes)
     x_mod <- (data$xmax - data$xmin) / data$width
     data$x <- data$x + data$x_diff * x_mod
-    data
+    flip_data(data, params$flipped_aes)
   },
-  extra_params = 'na.rm'
+  extra_params = c('na.rm', 'orientation')
 )
 
 #' @rdname geom_sina
@@ -284,8 +302,8 @@ stat_sina <- function(mapping = NULL, data = NULL, geom = 'point',
                       position = 'dodge', scale = 'area', method = 'density',
                       bw = 'nrd0', kernel = 'gaussian', maxwidth = NULL,
                       adjust = 1, bin_limit = 1, binwidth = NULL, bins = NULL,
-                      seed = NA, ..., na.rm = FALSE, show.legend = NA,
-                      inherit.aes = TRUE) {
+                      seed = NA, jitter_y = TRUE, ..., na.rm = FALSE, orientation = NA,
+                      show.legend = NA, inherit.aes = TRUE) {
   method <- match.arg(method, c('density', 'counts'))
 
   layer(
@@ -298,7 +316,8 @@ stat_sina <- function(mapping = NULL, data = NULL, geom = 'point',
     inherit.aes = inherit.aes,
     params = list(scale = scale, method = method, bw = bw, kernel = kernel,
       maxwidth = maxwidth, adjust = adjust, bin_limit = bin_limit,
-      binwidth = binwidth, bins = bins, seed = seed, na.rm = na.rm, ...)
+      binwidth = binwidth, bins = bins, seed = seed, jitter_y = jitter_y, na.rm = na.rm,
+      orientation = orientation, ...)
   )
 }
 
@@ -308,6 +327,7 @@ geom_sina <- function(mapping = NULL, data = NULL,
                       stat = 'sina', position = 'dodge',
                       ...,
                       na.rm = FALSE,
+                      orientation = NA,
                       show.legend = NA,
                       inherit.aes = TRUE) {
   layer(
@@ -320,6 +340,7 @@ geom_sina <- function(mapping = NULL, data = NULL,
     inherit.aes = inherit.aes,
     params = list(
       na.rm = na.rm,
+      orientation = orientation,
       ...
     )
   )
@@ -329,14 +350,16 @@ geom_sina <- function(mapping = NULL, data = NULL,
 
 # Binning functions -------------------------------------------------------
 
-bins <- function(breaks, closed = c('right', 'left'),
+bins <- function(breaks, closed = "right",
                  fuzz = 1e-08 * stats::median(diff(breaks))) {
-  stopifnot(is.numeric(breaks))
-  closed <- match.arg(closed)
+  if (!is.numeric(breaks)) {
+    cli::cli_abort("{.arg breaks} must be a numeric vector")
+  }
+  closed <- arg_match0(closed, c("right", "left"))
 
   breaks <- sort(breaks)
   # Adapted base::hist - this protects from floating point rounding errors
-  if (closed == 'right') {
+  if (closed == "right") {
     fuzzes <- c(-fuzz, rep.int(fuzz, length(breaks) - 1))
   } else {
     fuzzes <- c(rep.int(-fuzz, length(breaks) - 1), fuzz)
@@ -346,9 +369,9 @@ bins <- function(breaks, closed = c('right', 'left'),
     list(
       breaks = breaks,
       fuzzy = breaks + fuzzes,
-      right_closed = closed == 'right'
+      right_closed = closed == "right"
     ),
-    class = 'ggplot2_bins'
+    class = "ggplot2_bins"
   )
 }
 
@@ -360,39 +383,30 @@ compute_density <- function(x, w, from, to, bw = "nrd0", adjust = 1,
   nx <- length(x)
   if (is.null(w)) {
     w <- rep(1 / nx, nx)
-  }
-
-  # if less than 2 points return data frame of NAs and a warning
-  if (nx < 2) {
-    warning("Groups with fewer than two data points have been dropped.", call. = FALSE)
-    return(new_data_frame(list(
-      x = NA_real_,
-      density = NA_real_,
-      scaled = NA_real_,
-      ndensity = NA_real_,
-      count = NA_real_,
-      n = NA_integer_
-    ), n = 1))
+  } else {
+    w <- w / sum(w)
   }
 
   dens <- stats::density(x, weights = w, bw = bw, adjust = adjust,
                          kernel = kernel, n = n, from = from, to = to)
 
-  new_data_frame(list(
+  data_frame0(
     x = dens$x,
     density = dens$y,
     scaled =  dens$y / max(dens$y, na.rm = TRUE),
     ndensity = dens$y / max(dens$y, na.rm = TRUE),
     count =   dens$y * nx,
     n = nx
-  ), n = length(dens$x))
+  )
 }
 calc_bw <- function(x, bw) {
   if (is.character(bw)) {
-    if (length(x) < 2)
-      stop("need at least 2 points to select a bandwidth automatically", call. = FALSE)
+    if (length(x) < 2) {
+      cli::cli_abort("{.arg x} must contain at least 2 elements to select a bandwidth automatically")
+    }
+
     bw <- switch(
-      base::tolower(bw),
+      to_lower_ascii(bw),
       nrd0 = stats::bw.nrd0(x),
       nrd = stats::bw.nrd(x),
       ucv = stats::bw.ucv(x),
@@ -400,7 +414,7 @@ calc_bw <- function(x, bw) {
       sj = ,
       `sj-ste` = stats::bw.SJ(x, method = "ste"),
       `sj-dpi` = stats::bw.SJ(x, method = "dpi"),
-      stop("unknown bandwidth rule")
+      cli::cli_abort("{.var {bw}} is not a valid bandwidth rule")
     )
   }
   bw
@@ -411,24 +425,29 @@ bin_breaks <- function(breaks, closed = c('right', 'left')) {
 }
 
 bin_breaks_width <- function(x_range, width = NULL, center = NULL,
-                             boundary = NULL, closed = c('right', 'left')) {
-  stopifnot(length(x_range) == 2)
+                             boundary = NULL, closed = c("right", "left")) {
+  if (length(x_range) != 2) {
+    cli::cli_abort("{.arg x_range} must have two elements")
+  }
 
   # if (length(x_range) == 0) {
   #   return(bin_params(numeric()))
   # }
-  stopifnot(is.numeric(width), length(width) == 1)
+  if (!(is.numeric(width) && length(width) == 1)) {
+    cli::cli_abort("{.arg width} must be a number")
+  }
   if (width <= 0) {
-    stop('`binwidth` must be positive', call. = FALSE)
+    cli::cli_abort("{.arg binwidth} must be positive")
   }
 
   if (!is.null(boundary) && !is.null(center)) {
-    stop('Only one of \'boundary\' and \'center\' may be specified.')
+    cli::cli_abort("Only one of {.arg boundary} and {.arg center} may be specified.")
   } else if (is.null(boundary)) {
     if (is.null(center)) {
       # If neither edge nor center given, compute both using tile layer's
       # algorithm. This puts min and max of data in outer half of their bins.
       boundary <- width / 2
+
     } else {
       # If center given but not boundary, compute boundary.
       boundary <- center - width / 2
@@ -446,18 +465,36 @@ bin_breaks_width <- function(x_range, width = NULL, center = NULL,
   # Small correction factor so that we don't get an extra bin when, for
   # example, origin = 0, max(x) = 20, width = 10.
   max_x <- x_range[2] + (1 - 1e-08) * width
+
+  if (isTRUE((max_x - origin) / width > 1e6)) {
+    cli::cli_abort(c(
+      "The number of histogram bins must be less than 1,000,000.",
+      "i" = "Did you make {.arg binwidth} too small?"
+    ))
+  }
   breaks <- seq(origin, max_x, width)
+
+  if (length(breaks) == 1) {
+    # In exceptionally rare cases, the above can fail and produce only a
+    # single break (see issue #3606). We fix this by adding a second break.
+    breaks <- c(breaks, breaks + width)
+  }
 
   bin_breaks(breaks, closed = closed)
 }
 
 bin_breaks_bins <- function(x_range, bins = 30, center = NULL,
-                            boundary = NULL, closed = c('right', 'left')) {
-  stopifnot(length(x_range) == 2)
+                            boundary = NULL, closed = c("right", "left")) {
+  if (length(x_range) != 2) {
+    cli::cli_abort("{.arg x_range} must have two elements")
+  }
 
   bins <- as.integer(bins)
   if (bins < 1) {
-    stop('Need at least one bin.', call. = FALSE)
+    cli::cli_abort("{.arg bins} must be 1 or greater")
+  } else if (scales::zero_range(x_range)) {
+    # 0.1 is the same width as the expansion `default_expansion()` gives for 0-width data
+    width <- 0.1
   } else if (bins == 1) {
     width <- diff(x_range)
     boundary <- x_range[1]
@@ -465,10 +502,8 @@ bin_breaks_bins <- function(x_range, bins = 30, center = NULL,
     width <- (x_range[2] - x_range[1]) / (bins - 1)
   }
 
-  bin_breaks_width(x_range, width,
-    boundary = boundary, center = center,
-    closed = closed
-  )
+  bin_breaks_width(x_range, width, boundary = boundary, center = center,
+                   closed = closed)
 }
 
 .has_groups <- function(data) {
