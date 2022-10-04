@@ -1,12 +1,12 @@
-2d5f3bf4a90ccd792b74e35169cde1d0 *DESCRIPTION
+bf7515ee877f25e7075fae9ed0dda4fe *DESCRIPTION
 c31ee18d335f7158ed985f5939319c1f *LICENSE
 6b0db74ed1667981932a97259f3f0520 *NAMESPACE
-323af1e5af3872a4903232f98c55351e *NEWS.md
+c3b785b874e249165480df4a5243457c *NEWS.md
 5f42de1a5c1bd0d2bca8e5e0895fcbfe *R/RcppExports.R
 c52cbce1c0cdab630ddf4720b54dea19 *R/aaa.R
 26c00671c21714c44c33d02656816d6e *R/arc.R
 c9f4a364ecdf372d717a0bb4d3ffb55f *R/arc_bar.R
-d5d3367555b82572085e5ab43c91da5d *R/autodensity.R
+6f2adaccc07a3b6524c9c330999c72cb *R/autodensity.R
 7e2a4ea195cd99881eca8b857d85a105 *R/autohistogram.R
 8a33304dfad54e631f572d53b159770d *R/autopoint.R
 978419d9bbc8e0c3d7e5d2d8b931f26f *R/bezier.R
@@ -31,7 +31,7 @@ c12c9a5d11dedb91ab0a8382a2fec52c *R/labeller.R
 4acb45df3c1ffc9babd13852ab1efbc8 *R/mark_circle.R
 43f3389cb5e65e59384929c1df133cd3 *R/mark_ellipse.R
 2e41383bbe730e087cd20596bea22d96 *R/mark_hull.R
-25c140f0bcc48105169bfa3a62e01a8d *R/mark_label.R
+d14ced82b8d9a66d846524b5db98cf90 *R/mark_label.R
 2f21812a6d0342b2854299b2bd217deb *R/mark_rect.R
 ef8bc4e5aa17011d4b7eee0e62100100 *R/parallel_sets.R
 35c1d6bb63b6059b67282bb2e21a533a *R/position-jitternormal.R

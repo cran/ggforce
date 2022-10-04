@@ -1,7 +1,7 @@
 Package: ggforce
 Type: Package
 Title: Accelerating 'ggplot2'
-Version: 0.4.0
+Version: 0.4.1
 Authors@R: 
     c(person(given = "Thomas Lin",
              family = "Pedersen",
@@ -43,9 +43,9 @@ Collate: 'RcppExports.R' 'aaa.R' 'shape.R' 'arc_bar.R' 'arc.R'
         'scale-unit.R' 'sina.R' 'spiro.R' 'themes.R' 'trans.R'
         'trans_linear.R' 'utilities.R' 'voronoi.R' 'zzz.R'
 NeedsCompilation: yes
-Packaged: 2022-09-28 11:21:54 UTC; thomas
+Packaged: 2022-10-03 12:36:36 UTC; thomas
 Author: Thomas Lin Pedersen [cre, aut]
     (<https://orcid.org/0000-0002-5147-4711>),
   RStudio [cph]
 Repository: CRAN
-Date/Publication: 2022-09-29 08:10:07 UTC
+Date/Publication: 2022-10-04 09:50:02 UTC
