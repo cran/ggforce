@@ -1,7 +1,7 @@
-bf7515ee877f25e7075fae9ed0dda4fe *DESCRIPTION
+27a9f3878cf1d1c08a38e211f4ffefd5 *DESCRIPTION
 c31ee18d335f7158ed985f5939319c1f *LICENSE
 6b0db74ed1667981932a97259f3f0520 *NAMESPACE
-c3b785b874e249165480df4a5243457c *NEWS.md
+e683225e2ba168113fea8b47f1e2e0ac *NEWS.md
 5f42de1a5c1bd0d2bca8e5e0895fcbfe *R/RcppExports.R
 c52cbce1c0cdab630ddf4720b54dea19 *R/aaa.R
 26c00671c21714c44c33d02656816d6e *R/arc.R
@@ -25,7 +25,7 @@ c6cd6a6438852de323b84093022809b4 *R/errorbar.R
 340e6b5e362d0b7b25f86012977661a4 *R/facet_zoom.R
 acf004f3f49aed3ae7cda429ed33adb2 *R/ggforce-package.R
 fee6ed1299effd00b4befb852ea654d5 *R/ggproto-classes.R
-1c333104acdf5d1eb8e2680520742f93 *R/interpolate.R
+6f4c793f0a8f273884e6dd31056e3703 *R/interpolate.R
 c12c9a5d11dedb91ab0a8382a2fec52c *R/labeller.R
 13cdad57cb17d98d6bd87b15359f448e *R/link.R
 4acb45df3c1ffc9babd13852ab1efbc8 *R/mark_circle.R
@@ -50,7 +50,7 @@ ed0d6f8afc438224c01f2c41a6d85134 *R/utilities.R
 5c076b2c80491a493dbc753b7e0dea8a *R/voronoi.R
 2445757c830b4089fc4fe993f0aa2574 *R/zzz.R
 ba9d9d307461077da20157de892f8515 *README.md
-e807bd1f0e9519e3368f7f19bebf581f *man/facet_grid_paginate.Rd
+34f8441533f62b6c21362a5ebf2de211 *man/facet_grid_paginate.Rd
 bdd64205f085c5b1063a417abb7e4ae9 *man/facet_matrix.Rd
 cb1f767b59e1cb4a70ccc8429a36e75e *man/facet_row.Rd
 6f063e27bf980fed22223bda91c1e481 *man/facet_stereo.Rd
@@ -70,7 +70,7 @@ c3978703d8f40f2679795335715e98f4 *man/figures/lifecycle-experimental.svg
 1e9f0843746b1768a818640d9e0cec8c *man/gather_set_data.Rd
 dfe87985265644daac4e6218ae3154dc *man/geom_arc.Rd
 f25fb45915206f491c43f3ccdb629e4b *man/geom_arc_bar.Rd
-58d89e1f6352ea4d5341ada37dd77d9b *man/geom_autohistogram.Rd
+137277be5673930c1a292e2893ceb6e6 *man/geom_autohistogram.Rd
 3c665932653f3096dd1154debb0e8d83 *man/geom_autopoint.Rd
 2ef5aa69a93f9479aaa19e2f0451b827 *man/geom_bezier.Rd
 c55eae4fd2498f19941a8f985265e7b2 *man/geom_bspline.Rd
@@ -88,11 +88,11 @@ f068a295d976504ba34549892ebcf855 *man/geom_mark_hull.Rd
 c0b199d4da68f72a7602b6f155a67bf9 *man/geom_parallel_sets.Rd
 f58d9dd61cb2f58951d26e7b37c71dc3 *man/geom_regon.Rd
 b1d35636370a3b318f626fcd27f6b37c *man/geom_shape.Rd
-b07f16515f1df60495947ff55af9d1e1 *man/geom_sina.Rd
+d528bb589e618d5708f0ebe6d55ffd7f *man/geom_sina.Rd
 b7beb4c3729c877d2a2dce344982e0d2 *man/geom_spiro.Rd
 b745311004a906a5a207974dd646f35c *man/ggforce-extensions.Rd
 d5f74b11aa5d1708b69865f2a3f35cf4 *man/ggforce-package.Rd
-bbc605c79e6223150c2d4883b376994f *man/interpolateDataFrame.Rd
+7c04ebc12cbdf837804cc8c209b5025d *man/interpolateDataFrame.Rd
 bf23fe37e93fbcd24a4db8329b5e2556 *man/label_tex.Rd
 4b75fdf88125c4f945353f24882dbbfa *man/linear_trans.Rd
 12d8ae329fdd7b044564efe314941910 *man/n_pages.Rd
@@ -104,7 +104,7 @@ e7ebcf6bf39671dc8c5e8ed9cb067a20 *man/scale_depth.Rd
 2d273b2e54b3ea59e54a83c28a5595ab *man/scale_unit.Rd
 f9b2b12ae0d2b81e6a999486e8c3d8ca *man/stat_err.Rd
 e4501f76729f26339ebb93cd3f853dc5 *man/theme_no_axes.Rd
-71c59970b7f3f600afe897ba9f88432c *man/trans_reverser.Rd
+e0c9cb605b5af22900c9f8ecbc5e8f84 *man/trans_reverser.Rd
 766464f44861aab1d62b784c1a37b182 *src/RcppExports.cpp
 3aa167414d82641dc6876e2f6a02bfd3 *src/bSpline.cpp
 5d1dc745394f636ee366fcd3eb267879 *src/bezier.cpp
