@@ -157,7 +157,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
         x_vars <- intersect(x_scales[[1]]$aesthetics, names(layer_data))
         SCALE_X <- layout$SCALE_X[match_id]
 
-        if (!is.null(params$xlim)) {
+        if (!is.null(params$xlim) && length(x_scales) > 1) {
           x_scales[[2]]$train(x_scales[[2]]$transform(params$xlim))
           scale_apply(layer_data, x_vars, 'train', SCALE_X, x_scales[-2])
         } else {
@@ -172,7 +172,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
         y_vars <- intersect(y_scales[[1]]$aesthetics, names(layer_data))
         SCALE_Y <- layout$SCALE_Y[match_id]
 
-        if (!is.null(params$ylim)) {
+        if (!is.null(params$ylim) && length(y_scales) > 1) {
           y_scales[[2]]$train(y_scales[[2]]$transform(params$ylim))
           scale_apply(layer_data, y_vars, 'train', SCALE_Y, y_scales[-2])
         } else {
@@ -234,7 +234,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
         indicator <- polygonGrob(
           c(1, 1, 0, 0),
           c(zoom_prop, 1, 0),
-          gp = gpar(col = NA, fill = alpha(zoom_y$fill, 0.5))
+          gp = gpar(col = NA, fill = ggplot2::fill_alpha(zoom_y$fill, 0.5))
         )
         lines <- segmentsGrob(
           y0 = c(0, 1),
@@ -261,7 +261,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
         indicator <- polygonGrob(
           c(zoom_prop, 1, 0),
           c(1, 1, 0, 0),
-          gp = gpar(col = NA, fill = alpha(zoom_x$fill, 0.5))
+          gp = gpar(col = NA, fill = ggplot2::fill_alpha(zoom_x$fill, 0.5))
         )
         lines <- segmentsGrob(
           x0 = c(0, 1),
@@ -282,11 +282,9 @@ FacetZoom <- ggproto('FacetZoom', Facet,
     }
 
     if ('full' %in% layout$name && params$split) {
-      space.x <- theme$panel.spacing.x
-      if (is.null(space.x)) space.x <- theme$panel.spacing
+      space.x <- calc_element("panel.spacing.x", theme)
       space.x <- unit(5 * as.numeric(convertUnit(space.x, 'cm')), 'cm')
-      space.y <- theme$panel.spacing.y
-      if (is.null(space.y)) space.y <- theme$panel.spacing
+      space.y <- calc_element("panel.spacing.y", theme)
       space.y <- unit(5 * as.numeric(convertUnit(space.y, 'cm')), 'cm')
       final <- gtable_add_cols(panelGrobs[[3]], space.x)
       final <- cbind(final, panelGrobs[[1]], size = 'first')
@@ -320,8 +318,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
       final$widths <- widths
     } else {
       if (params$horizontal) {
-        space <- theme$panel.spacing.x
-        if (is.null(space)) space <- theme$panel.spacing
+        space <- calc_element("panel.spacing.x", theme)
         space <- unit(5 * as.numeric(convertUnit(space, 'cm')), 'cm')
         heights <- unit.c(
           unit(max_height(list(axes$x[[1]]$top, axes$x[[2]]$top)), 'cm'),
@@ -335,8 +332,7 @@ FacetZoom <- ggproto('FacetZoom', Facet,
         final <- gtable_add_grob(final, indicator_h, 2, 3, 2, 5, z = -Inf,
                                  name = 'zoom-indicator')
       } else {
-        space <- theme$panel.spacing.y
-        if (is.null(space)) space <- theme$panel.spacing
+        space <- calc_element("panel.spacing.y", theme)
         space <- unit(5 * as.numeric(convertUnit(space, 'cm')), 'cm')
         widths <- unit.c(
           unit(max_width(list(axes$y[[1]]$left, axes$y[[2]]$left)), 'cm'),
@@ -358,14 +354,14 @@ FacetZoom <- ggproto('FacetZoom', Facet,
     zoom_y <- calc_element('zoom.y', theme)
 
     if (!(is.null(params$x) && is.null(params$xlim)) &&
-        params$show.area && !inherits(zoom_x, 'element_blank')) {
+        params$show.area && !inherits(zoom_x, 'element_blank') && length(x_scales) > 1) {
       zoom_prop <- rescale(x_scales[[2]]$dimension(expansion(x_scales[[2]])),
         from = x_scales[[1]]$dimension(expansion(x_scales[[1]]))
       )
       x_back <- grobTree(
         rectGrob(x = mean(zoom_prop), y = 0.5, width = diff(zoom_prop),
                  height = 1,
-                 gp = gpar(col = NA, fill = alpha(zoom_x$fill, 0.5))),
+                 gp = gpar(col = NA, fill = ggplot2::fill_alpha(zoom_x$fill, 0.5))),
         segmentsGrob(zoom_prop, c(0, 0), zoom_prop, c(1, 1), gp = gpar(
           col = zoom_x$colour,
           lty = zoom_x$linetype,
@@ -377,14 +373,14 @@ FacetZoom <- ggproto('FacetZoom', Facet,
       x_back <- zeroGrob()
     }
     if (!(is.null(params$y) && is.null(params$ylim)) &&
-        params$show.area && !inherits(zoom_y, 'element_blank')) {
+        params$show.area && !inherits(zoom_y, 'element_blank') && length(y_scales) > 1) {
       zoom_prop <- rescale(y_scales[[2]]$dimension(expansion(y_scales[[2]])),
         from = y_scales[[1]]$dimension(expansion(y_scales[[1]]))
       )
       y_back <- grobTree(
         rectGrob(y = mean(zoom_prop), x = 0.5, height = diff(zoom_prop),
                  width = 1,
-                 gp = gpar(col = NA, fill = alpha(zoom_y$fill, 0.5))),
+                 gp = gpar(col = NA, fill = ggplot2::fill_alpha(zoom_y$fill, 0.5))),
         segmentsGrob(y0 = zoom_prop, x0 = c(0, 0), y1 = zoom_prop, x1 = c(1, 1),
                      gp = gpar(col = zoom_y$colour,
                                lty = zoom_y$linetype,

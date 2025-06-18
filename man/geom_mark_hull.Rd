@@ -57,15 +57,31 @@ the plot data. The return value must be a \code{data.frame}, and
 will be used as the layer data. A \code{function} can be created
 from a \code{formula} (e.g. \code{~ head(.x, 10)}).}
 
-\item{stat}{The statistical transformation to use on the data for this
-layer, either as a \code{ggproto} \code{Geom} subclass or as a string naming the
-stat stripped of the \code{stat_} prefix (e.g. \code{"count"} rather than
-\code{"stat_count"})}
+\item{stat}{The statistical transformation to use on the data for this layer.
+When using a \verb{geom_*()} function to construct a layer, the \code{stat}
+argument can be used the override the default coupling between geoms and
+stats. The \code{stat} argument accepts the following:
+\itemize{
+\item A \code{Stat} ggproto subclass, for example \code{StatCount}.
+\item A string naming the stat. To give the stat as a string, strip the
+function name of the \code{stat_} prefix. For example, to use \code{stat_count()},
+give the stat as \code{"count"}.
+\item For more information and other ways to specify the stat, see the
+\link[ggplot2:layer_stats]{layer stat} documentation.
+}}
 
-\item{position}{Position adjustment, either as a string naming the adjustment
-(e.g. \code{"jitter"} to use \code{position_jitter}), or the result of a call to a
-position adjustment function. Use the latter if you need to change the
-settings of the adjustment.}
+\item{position}{A position adjustment to use on the data for this layer. This
+can be used in various ways, including to prevent overplotting and
+improving the display. The \code{position} argument accepts the following:
+\itemize{
+\item The result of calling a position function, such as \code{position_jitter()}.
+This method allows for passing extra arguments to the position.
+\item A string naming the position adjustment. To give the position as a
+string, strip the function name of the \code{position_} prefix. For example,
+to use \code{position_jitter()}, give the position as \code{"jitter"}.
+\item For more information and other ways to specify the position, see the
+\link[ggplot2:layer_positions]{layer position} documentation.
+}}
 
 \item{expand}{A numeric or unit vector of length one, specifying the
 expansion amount. Negative values will result in contraction instead. If the
@@ -107,24 +123,30 @@ second for the description.}
 two elements the first will be used for the label and the second for the
 description.}
 
-\item{label.fill}{The fill colour for the annotation box.}
+\item{label.fill}{The fill colour for the annotation box. Use \code{"inherit"} to
+use the fill from the enclosure or \code{"inherit_col"} to use the border colour
+of the enclosure.}
 
 \item{label.colour}{The text colour for the annotation. If it contains
 two elements the first will be used for the label and the second for the
-description.}
+description. Use \code{"inherit"} to use the border colour of the enclosure or
+\code{"inherit_fill"} to use the fill colour from the enclosure.}
 
 \item{label.buffer}{The size of the region around the mark where labels
 cannot be placed.}
 
 \item{con.colour}{The colour for the line connecting the annotation to the
-mark.}
+mark. Use \code{"inherit"} to use the border colour of the enclosure or
+\code{"inherit_fill"} to use the fill colour from the enclosure.}
 
-\item{con.size}{The width of the connector.}
+\item{con.size}{The width of the connector. Use \code{"inherit"} to use the border
+width of the enclosure.}
 
 \item{con.type}{The type of the connector. Either \code{"elbow"}, \code{"straight"}, or
 \code{"none"}.}
 
-\item{con.linetype}{The linetype of the connector.}
+\item{con.linetype}{The linetype of the connector. Use \code{"inherit"} to use the
+border linetype of the enclosure.}
 
 \item{con.border}{The bordertype of the connector. Either \code{"one"} (to draw a
 line on the horizontal side closest to the mark), \code{"all"} (to draw a border
@@ -135,10 +157,33 @@ on all sides), or \code{"none"} (not going to explain that one).}
 \item{con.arrow}{An arrow specification for the connection using
 \code{\link[grid:arrow]{grid::arrow()}} for the end pointing towards the mark.}
 
-\item{...}{Other arguments passed on to \code{\link[ggplot2:layer]{layer()}}. These are
-often aesthetics, used to set an aesthetic to a fixed value, like
-\code{colour = "red"} or \code{size = 3}. They may also be parameters
-to the paired geom/stat.}
+\item{...}{Other arguments passed on to \code{\link[ggplot2:layer]{layer()}}'s \code{params} argument. These
+arguments broadly fall into one of 4 categories below. Notably, further
+arguments to the \code{position} argument, or aesthetics that are required
+can \emph{not} be passed through \code{...}. Unknown arguments that are not part
+of the 4 categories below are ignored.
+\itemize{
+\item Static aesthetics that are not mapped to a scale, but are at a fixed
+value and apply to the layer as a whole. For example, \code{colour = "red"}
+or \code{linewidth = 3}. The geom's documentation has an \strong{Aesthetics}
+section that lists the available options. The 'required' aesthetics
+cannot be passed on to the \code{params}. Please note that while passing
+unmapped aesthetics as vectors is technically possible, the order and
+required length is not guaranteed to be parallel to the input data.
+\item When constructing a layer using
+a \verb{stat_*()} function, the \code{...} argument can be used to pass on
+parameters to the \code{geom} part of the layer. An example of this is
+\code{stat_density(geom = "area", outline.type = "both")}. The geom's
+documentation lists which parameters it can accept.
+\item Inversely, when constructing a layer using a
+\verb{geom_*()} function, the \code{...} argument can be used to pass on parameters
+to the \code{stat} part of the layer. An example of this is
+\code{geom_area(stat = "density", adjust = 0.5)}. The stat's documentation
+lists which parameters it can accept.
+\item The \code{key_glyph} argument of \code{\link[ggplot2:layer]{layer()}} may also be passed on through
+\code{...}. This can be one of the functions described as
+\link[ggplot2:draw_key]{key glyphs}, to change the display of the layer in the legend.
+}}
 
 \item{na.rm}{If \code{FALSE}, the default, missing values are removed with
 a warning. If \code{TRUE}, missing values are silently removed.}
@@ -213,7 +258,6 @@ removed data.
 }
 
 \examples{
-## requires the concaveman packages
 ggplot(iris, aes(Petal.Length, Petal.Width)) +
   geom_mark_hull(aes(fill = Species, filter = Species != 'versicolor')) +
   geom_point()
@@ -261,6 +305,14 @@ ggplot(iris, aes(Petal.Length, Petal.Width)) +
   geom_mark_hull(aes(fill = Species, label = Species),
                  con.cap = 0) +
   geom_point()
+
+# If you want to use the scaled colours for the labels or connectors you can
+# use the "inherit" keyword instead
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_mark_hull(aes(fill = Species, label = Species),
+                 label.fill = "inherit") +
+  geom_point()
+
 }
 \seealso{
 Other mark geoms: 
