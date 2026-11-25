@@ -1,3 +1,29 @@
+# ggforce 0.6.0
+
+* Fixed a bug in the enclosing ellipse calculation that could return a mirrored
+  (wrongly oriented) ellipse for some point configurations, and could error on
+  input with leading duplicate points (#354)
+* The `geom_mark_*()` family now gracefully ignores non-finite positions
+  arising during coordinate transformation instead of corrupting the mark and
+  label placement (#347)
+* Fixed a bug in `geom_mark_hull()` where near-collinear groups with duplicated
+  points would produce hugely oversized hulls due to unbounded miter joins
+  (#345)
+* The deprecated `label.fill` and `label.colour` arguments in the
+  `geom_mark_*()` family now work again, including the `"inherit"` keyword,
+  by being mapped onto the `style` aesthetic (#331)
+* `geom_link2()` now works with single-observation groups instead of erroring
+  (#328)
+* **BREAKING** The `geom_mark_*()` family now uses marquee for the content of
+  the text boxes. Use markdown to add titles etc rather than the previous label
+  title and body.
+* `geom_autohistogram()` draws continuous histograms with ggplot2 4.0.
+* The vendored `robust_predicates` C++ library has been replaced with a new
+  in-house implementation, making the package lighter and faster to install,
+  and the additional license restrictions in `LICENSE.note` have been removed
+  (#348, #349)
+* Compatibility with the S7-based ggplot2 (#359)
+
 # ggforce 0.5.0
 
 * Fixed a bug that would cause reordering of data in some geoms (#314)

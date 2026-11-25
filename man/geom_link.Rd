@@ -129,14 +129,16 @@ a warning. If \code{TRUE}, missing values are silently removed.}
 \code{NA}, the default, includes if any aesthetics are mapped.
 \code{FALSE} never includes, and \code{TRUE} always includes.
 It can also be a named logical vector to finely select the aesthetics to
-display.}
+display. To include legend keys for all levels, even
+when no data exists, use \code{TRUE}.  If \code{NA}, all levels are shown in legend,
+but unobserved levels are omitted.}
 
 \item{n}{The number of points to create for each segment}
 
 \item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics,
 rather than combining with them. This is most useful for helper functions
 that define both data and aesthetics and shouldn't inherit behaviour from
-the default plot specification, e.g. \code{\link[ggplot2:borders]{borders()}}.}
+the default plot specification, e.g. \code{\link[ggplot2:annotation_borders]{annotation_borders()}}.}
 
 \item{...}{Other arguments passed on to \code{\link[ggplot2:layer]{layer()}}'s \code{params} argument. These
 arguments broadly fall into one of 4 categories below. Notably, further
@@ -168,7 +170,7 @@ lists which parameters it can accept.
 
 \item{stat}{The statistical transformation to use on the data for this layer.
 When using a \verb{geom_*()} function to construct a layer, the \code{stat}
-argument can be used the override the default coupling between geoms and
+argument can be used to override the default coupling between geoms and
 stats. The \code{stat} argument accepts the following:
 \itemize{
 \item A \code{Stat} ggproto subclass, for example \code{StatCount}.
@@ -251,10 +253,10 @@ lines <- data.frame(
 
 ggplot(lines) +
   geom_link(aes(x = x, y = y, xend = xend, yend = yend, colour = colour,
-                alpha = stat(index), size = after_stat(index)))
+                alpha = after_stat(index), linewidth = after_stat(index)))
 
 ggplot(lines) +
-  geom_link2(aes(x = x, y = y, colour = colour, size = width, group = 1),
+  geom_link2(aes(x = x, y = y, colour = colour, linewidth = width, group = 1),
              lineend = 'round', n = 500)
 
 # geom_link0 is simply an alias for geom_segment to put the link geoms in

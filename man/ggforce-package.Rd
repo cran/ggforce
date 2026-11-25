@@ -6,7 +6,7 @@
 \alias{ggforce-package}
 \title{ggforce: Accelerating 'ggplot2'}
 \description{
-\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
 
 The aim of 'ggplot2' is to aid in visual data investigations. This focus has led to a lack of facilities for composing specialised plots. 'ggforce' aims to be a collection of mainly new stats and geoms that fills this gap. All additional functionality is aimed to come through the official extension system so using 'ggforce' should be a stable experience.
 }
@@ -32,7 +32,7 @@ rocketData2 <- do.call(rbind, lapply(seq_len(500) - 1, function(i) {
 
 ggplot() + geom_link(aes(
   x = 2, y = 2, xend = 3, yend = 3, alpha = after_stat(index),
-  size = after_stat(index)
+  linewidth = after_stat(index)
 ), colour = 'goldenrod', n = 500) +
   geom_bezier(aes(x = x, y = y, group = group, colour = after_stat(index)),
     data = rocketData
@@ -73,6 +73,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Thomas Lin Pedersen \email{thomasp85@gmail.com} (\href{https://orcid.org/0000-0002-5147-4711}{ORCID})
+
+Authors:
+\itemize{
+  \item Thomas Lin Pedersen \email{thomasp85@gmail.com} (\href{https://orcid.org/0000-0002-5147-4711}{ORCID})
+}
 
 Other contributors:
 \itemize{

@@ -1,7 +1,7 @@
 Package: ggforce
 Type: Package
 Title: Accelerating 'ggplot2'
-Version: 0.5.0
+Version: 0.6.0
 Authors@R: 
     c(person(given = "Thomas Lin",
              family = "Pedersen",
@@ -24,11 +24,11 @@ Encoding: UTF-8
 Depends: ggplot2 (>= 3.5.0), R (>= 3.3.0)
 Imports: grid, scales, MASS, tweenr (>= 0.1.5), gtable, rlang,
         polyclip, stats, grDevices, tidyselect, withr, utils,
-        lifecycle, cli, vctrs, systemfonts
-RoxygenNote: 7.3.2
+        lifecycle, cli, vctrs, marquee
 LinkingTo: cpp11
 Suggests: sessioninfo, deldir, latex2exp, reshape2, units (>= 0.8.0),
-        covr
+        covr, testthat (>= 3.0.0)
+Config/testthat/edition: 3
 Collate: 'aaa.R' 'shape.R' 'arc_bar.R' 'arc.R' 'autodensity.R'
         'autohistogram.R' 'autopoint.R' 'bezier.R' 'bspline.R'
         'bspline_closed.R' 'circle.R' 'concaveman.R' 'cpp11.R'
@@ -42,10 +42,12 @@ Collate: 'aaa.R' 'shape.R' 'arc_bar.R' 'arc.R' 'autodensity.R'
         'position_floatstack.R' 'regon.R' 'scale-depth.R'
         'scale-unit.R' 'sina.R' 'spiro.R' 'themes.R' 'trans.R'
         'trans_linear.R' 'utilities.R' 'voronoi.R' 'zzz.R'
+Config/build/compilation-database: true
+Config/roxygen2/version: 8.1.1
 NeedsCompilation: yes
-Packaged: 2025-06-18 12:00:16 UTC; thomas
+Packaged: 2026-11-25 08:27:27 UTC; thomas
 Author: Thomas Lin Pedersen [cre, aut] (ORCID:
     <https://orcid.org/0000-0002-5147-4711>),
   RStudio [cph]
 Repository: CRAN
-Date/Publication: 2025-06-18 12:40:02 UTC
+Date/Publication: 2026-11-25 09:40:02 UTC
